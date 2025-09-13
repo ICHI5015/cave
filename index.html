@@ -15,8 +15,7 @@
     --good:#59ffa8;
     --warn:#ffc857;
     --bad:#ff5d73;
-
-    --cell: calc(min(12.8vw, 64px)); /* モバイル優先で自動調整 */
+    --cell: calc(min(12.8vw, 64px));
     --gap: 6px;
     --radius: 14px;
     --shadow: 0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
@@ -33,11 +32,10 @@
     backdrop-filter: blur(8px);
   }
   .stat{flex:1; padding:12px;}
-  .stat .label{color:var(--muted); font-size:12px; letter-spacing:.2px;}
+  .stat .label{color:var(--muted); font-size:12px;}
   .stat .value{font-size:20px; font-weight:700; margin-top:4px; text-shadow: 0 0 16px rgba(0,224,255,.3);}
   .value .unit{font-weight:500; font-size:14px; color:var(--muted); margin-left:4px;}
-
-  .grid-wrap{position:relative; padding:12px; }
+  .grid-wrap{position:relative; padding:12px;}
   .grid{
     display:grid;
     grid-template-columns: repeat(6, var(--cell));
@@ -72,22 +70,10 @@
     border-radius:8px;
     pointer-events:none;
   }
-
-  .bar{
-    display:flex; gap:10px; align-items:center;
-    padding:12px;
-  }
-  .meter{
-    flex:1; height:12px; border-radius:999px; background:rgba(255,255,255,.06); position:relative; overflow:hidden;
-    border:1px solid rgba(255,255,255,.08);
-  }
-  .meter .fill{
-    position:absolute; inset:0 0 0 auto; width:0%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    box-shadow: 0 0 18px rgba(0,224,255,.5);
-  }
+  .bar{display:flex; gap:10px; align-items:center; padding:12px;}
+  .meter{flex:1; height:12px; border-radius:999px; background:rgba(255,255,255,.06); position:relative; overflow:hidden; border:1px solid rgba(255,255,255,.08);}
+  .meter .fill{position:absolute; inset:0 0 0 auto; width:0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(0,224,255,.5);}
   .tag{font-size:12px; color:var(--muted);}
-
   .controls{display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:12px;}
   button{
     background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
@@ -97,76 +83,36 @@
     border-radius: 12px;
     padding:12px;
     font-weight:700; font-size:14px;
-    letter-spacing:.2px;
   }
   button:active{transform: translateY(1px) scale(.998);}
   button[disabled]{opacity:.5;}
-
   .upgrades{padding:12px; display:grid; gap:10px;}
   .upgrade{display:flex; gap:12px; align-items:center; justify-content:space-between; padding:10px;}
   .upgrade .info{display:flex; flex-direction:column; gap:4px;}
   .upgrade .name{font-weight:800; font-size:14px;}
   .upgrade .sub{font-size:12px; color:var(--muted);}
   .upgrade .lvl{font-weight:800; color:var(--good); font-size:12px;}
-
-  .toast{
-    position: fixed; left:50%; bottom: 18px; transform: translateX(-50%) translateY(24px);
-    background: rgba(17,24,35,.8);
-    border:1px solid rgba(255,255,255,.08);
-    color:var(--text);
-    padding:10px 14px; border-radius:12px;
-    backdrop-filter: blur(8px);
-    opacity:0; pointer-events:none;
-    transition: .3s ease;
-  }
+  .toast{position: fixed; left:50%; bottom: 18px; transform: translateX(-50%) translateY(24px); background: rgba(17,24,35,.8); border:1px solid rgba(255,255,255,.08); color:var(--text); padding:10px 14px; border-radius:12px; backdrop-filter: blur(8px); opacity:0; pointer-events:none; transition: .3s ease;}
   .toast.show{opacity:1; transform: translateX(-50%) translateY(0);}
-
-  /* ピッケルアニメーション */
-  .pickaxe{
-    position:fixed; z-index:9999; pointer-events:none;
-    font-size: 24px;
-    filter: drop-shadow(0 6px 12px rgba(0,0,0,.6));
-    animation: swing .35s cubic-bezier(.2,.8,.2,1) forwards;
-  }
+  .pickaxe{position:fixed; z-index:9999; pointer-events:none; font-size: 24px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.6)); animation: swing .35s cubic-bezier(.2,.8,.2,1) forwards;}
   @keyframes swing{
     0%{ transform: translate(-6px,-6px) rotate(-40deg) scale(1.1); opacity:0;}
     40%{opacity:1;}
     60%{ transform: translate(4px,4px) rotate(10deg) scale(1);}
     100%{ transform: translate(0,0) rotate(0) scale(.9); opacity:0;}
   }
-
-  /* 洞窟探索オーバーレイ */
-  .cave-progress{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    background: rgba(0,0,0,.25);
-    color:#dff8ff; font-weight:800; font-size:13px; text-shadow: 0 0 10px rgba(0,224,255,.9);
-  }
-  .ring{
-    width: 32px; height: 32px; border-radius: 50%;
-    background:
-      conic-gradient(var(--accent) var(--deg,0deg), rgba(255,255,255,.12) 0);
-    box-shadow: 0 0 20px rgba(0,224,255,.4), inset 0 0 4px rgba(0,0,0,.5);
-    border:1px solid rgba(255,255,255,.15);
-  }
-
+  .cave-progress{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,.25); color:#dff8ff; font-weight:800; font-size:13px; text-shadow: 0 0 10px rgba(0,224,255,.9);}
+  .ring{width: 32px; height: 32px; border-radius: 50%; background: conic-gradient(var(--accent) var(--deg,0deg), rgba(255,255,255,.12) 0); box-shadow: 0 0 20px rgba(0,224,255,.4), inset 0 0 4px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.15);}
   .hint{padding:10px 12px; color:var(--muted); font-size:12px;}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="header">
-      <div class="stat card">
-        <div class="label">深度</div>
-        <div class="value" id="depth">0<span class="unit">m</span></div>
-      </div>
-      <div class="stat card">
-        <div class="label">スコア</div>
-        <div class="value" id="score">0</div>
-      </div>
-      <div class="stat card">
-        <div class="label">ピッケル</div>
-        <div class="value"><span id="pick">50</span>/<span id="pickMax">100</span></div>
-      </div>
+<div class="wrap">
+  <div class="header">
+    <div class="stat card"><div class="label">深度</div><div class="value" id="depth">0<span class="unit">m</span></div></div>
+    <div class="stat card"><div class="label">スコア</div><div class="value" id="score">0</div></div>
+    <div class="stat card"><div class="label">ピッケル</div><div class="value"><span id="pick">50</span>
+      <span id="pickMax">100</span></div></div>
     </div>
 
     <div class="grid-wrap card">
@@ -176,7 +122,7 @@
         <div class="tag" id="regenLabel">3.0s</div>
       </div>
       <div class="grid" id="grid"></div>
-    
+     
     </div>
 
     <div class="controls card">
@@ -232,34 +178,20 @@
 
 <script>
 (() => {
-  // 基本設定
   const COLS = 6, ROWS = 7;
   const DIRT_PTS = 100, STONE_PTS = 200;
   const DIRT_COST = 1, STONE_COST = 2;
-  const IMG = {
-    dirt: 'dirt.png',
-    stone: 'stone.png',
-    cave: 'cave.png'
-  };
+  const IMG = { dirt: 'dirt.png', stone: 'stone.png', cave: 'cave.png' };
 
-  // ステート
+  let mineCooldown = 0; // 掘りクールダウン用
+
   const state = {
-    depth: 0,
-    score: 0,
-    pick: 50,
-    pickMax: 100,
-    regenBase: 3000, // ms（Lv0）
-    regenLevel: 0,
-    maxLevel: 0, // +10ずつ（最大100）
-    pointsLevel: 0, // +20%/Lv
-    caveLevel: 0,   // +50%/Lv
-    grid: [], // [row][col] -> cell
-    caves: {}, // caveId -> {size, status, endsAt, cells:[{r,c}]}
-    lastTick: performance.now(),
-    regenElapsed: 0
+    depth: 0, score: 0, pick: 50, pickMax: 100,
+    regenBase: 3000, regenLevel: 0, maxLevel: 0,
+    pointsLevel: 0, caveLevel: 0,
+    grid: [], caves: {}, lastTick: performance.now(), regenElapsed: 0
   };
 
-  // 便利
   const el = (sel) => document.querySelector(sel);
   const gridEl = el('#grid');
   const depthEl = el('#depth');
@@ -270,44 +202,32 @@
   const regenLabel = el('#regenLabel');
   const toastEl = el('#toast');
 
-  // 初期化
   function init(){
     load();
     if (state.grid.length === 0) {
-      // 7行生成（上→下）
       for(let r=0;r<ROWS;r++) state.grid.push(genRow());
     }
     renderAll();
     loop();
   }
 
-  // 行生成＋時々洞窟（下から生えてくるイメージ）
   function genRow(){
     const row = [];
     for(let c=0;c<COLS;c++){
-      // 石:土 おおよそ 35%:65%
-      const stoneChance = 0.35 + Math.min(0.25, state.depth * 0.0008); // 深くなると石が増える
+      const stoneChance = 0.35 + Math.min(0.25, state.depth * 0.0008);
       const isStone = Math.random() < stoneChance;
-      row.push({
-        type: isStone ? 'stone' : 'dirt',
-        caveId: null
-      });
+      row.push({ type: isStone ? 'stone' : 'dirt', caveId: null });
     }
     return row;
   }
 
-  // 洞窟スポーン（低確率、出現時は直近の行を上書きして配置）
   function maybeSpawnCave(){
-    const chance = 0.12; // 12%で何か出る
-    if (Math.random() > chance) return;
+    if (Math.random() > 0.12) return;
     const sizes = [1,2,3];
     const size = sizes[Math.floor(Math.random()*sizes.length)];
     if (size > ROWS || size > COLS) return;
-
-    // 左上位置（範囲内）
     const c0 = Math.floor(Math.random()*(COLS - size + 1));
-    const r0 = ROWS - size; // 下端に合わせて出す
-
+    const r0 = ROWS - size;
     const caveId = 'cv_' + Math.random().toString(36).slice(2,9);
     const cells = [];
     for(let dr=0; dr<size; dr++){
@@ -317,22 +237,15 @@
         cells.push({r,c});
       }
     }
-    const duration = size===1 ? 30_000 : (size===2 ? 60_000 : 120_000);
-    state.caves[caveId] = {
-      id: caveId,
-      size, status: 'idle', endsAt: 0, startedAt: 0, duration, cells
-    };
+    const duration = size===1 ? 30000 : (size===2 ? 60000 : 120000);
+    state.caves[caveId] = { id: caveId, size, status: 'idle', endsAt: 0, startedAt: 0, duration, cells };
   }
 
-  // レンダリング
   function renderAll(){
-    // ヘッダ
     depthEl.innerHTML = `${state.depth}<span class="unit">m</span>`;
     scoreEl.textContent = Math.floor(state.score);
     pickEl.textContent = state.pick;
     pickMaxEl.textContent = state.pickMax;
-
-    // グリッド
     gridEl.innerHTML = '';
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
@@ -340,14 +253,12 @@
         const div = document.createElement('div');
         div.className = 'cell ' + cell.type;
         div.dataset.r = r; div.dataset.c = c;
-
-        if (cell.type==='dirt' || cell.type==='stone' || cell.type==='cave'){
+        if (cell.type!=='empty'){
           const t = document.createElement('div');
           t.className = 'tile';
           t.style.backgroundImage = `url(${IMG[cell.type]})`;
           div.appendChild(t);
         }
-        // 洞窟進行UI
         if (cell.type==='cave'){
           const cave = state.caves[cell.caveId];
           if (cave && cave.status === 'running'){
@@ -361,53 +272,42 @@
             div.appendChild(overlay);
           }
         }
-
-        div.addEventListener('click', onCell);
         div.addEventListener('touchstart', onCell, {passive:true});
         gridEl.appendChild(div);
       }
     }
-
-    // アップグレード表示
     el('#lvlRegen').textContent = `Lv.${state.regenLevel}`;
     el('#lvlMax').textContent = `Lv.${state.maxLevel}`;
     el('#lvlPoints').textContent = `Lv.${state.pointsLevel}`;
     el('#lvlCave').textContent = `Lv.${state.caveLevel}`;
-
     el('#costRegen').textContent = getCost('regen');
     el('#costMax').textContent = getCost('max');
     el('#costPoints').textContent = getCost('points');
     el('#costCave').textContent = getCost('cave');
-
-    // 回復ラベル
     regenLabel.textContent = (getRegenInterval()/1000).toFixed(1) + 's';
   }
 
- function onCell(e){
-     e.preventDefault(); // スマホでの二重発火防止
-  const now = performance.now();
-  if (now < mineCooldown) return; // クールダウン中は無視
-  mineCooldown = now + 300; // 300ms 後まで掘れない
+  function onCell(e){
+    const now = performance.now();
+    if (now < mineCooldown) return;
+    mineCooldown = now + 300; // 0.3秒クールダウン
+    e.preventDefault();
 
-  const target = e.currentTarget;
-  const r = +target.dataset.r, c = +target.dataset.c;
-  const cell = state.grid[r][c];
-  if (!cell) return;
-
-  const rect = target.getBoundingClientRect();
+    const target = e.currentTarget;
+    const r = +target.dataset.r, c = +target.dataset.c;
+    const cell = state.grid[r][c];
+    if (!cell) return;
+    const rect = target.getBoundingClientRect();
   spawnPickaxe(rect.left + rect.width*0.5, rect.top + rect.height*0.4);
 
     if (cell.type === 'dirt' || cell.type === 'stone'){
       const need = cell.type === 'stone' ? STONE_COST : DIRT_COST;
       if (state.pick < need){ ping('ピッケル不足'); return; }
-
       state.pick -= need;
       const mult = 1 + state.pointsLevel * 0.2;
       const pts = (cell.type==='stone' ? STONE_PTS : DIRT_PTS) * mult;
       state.score += pts;
-
       state.grid[r][c] = {type:'empty', caveId:null};
-      // 最下段で採掘したら1m進む
       if (r === ROWS-1){
         depthDown();
       } else {
@@ -420,7 +320,6 @@
       if (cave.status === 'idle'){
         startCave(cave);
       } else {
-        // 進行中なら何もしない
         ping('探索中…');
       }
     }
@@ -428,47 +327,38 @@
 
   function depthDown(){
     state.depth += 1;
-    // 一番上の段を消す
     state.grid.shift();
-    // 下から一段出る
     state.grid.push(genRow());
-    // たまに洞窟を生やす
     maybeSpawnCave();
     renderAll();
   }
 
-  // 洞窟探索
   function startCave(cave){
     cave.status = 'running';
     cave.startedAt = performance.now();
     cave.endsAt = cave.startedAt + cave.duration;
     renderAll();
   }
+
   function finishCave(cave){
     cave.status = 'done';
-    // 収穫
     const size = cave.size;
     const pickBase = size===1 ? 6 : (size===2 ? 14 : 28);
     const pointBase = size===1 ? 200 : (size===2 ? 600 : 1500);
     const pickGain = Math.round(pickBase * (1 + state.caveLevel*0.5));
     const pointGain = Math.round(pointBase * (1 + state.pointsLevel*0.2));
-
     addPickaxes(pickGain);
     state.score += pointGain;
-
-    // ブロックを空に
     for (const {r,c} of cave.cells){
       if (state.grid[r] && state.grid[r][c]){
         state.grid[r][c] = {type:'empty', caveId:null};
       }
     }
-    // 後片付け
     delete state.caves[cave.id];
     ping(`洞窟クリア！⛏ +${pickGain} / +${pointGain}pt`);
     renderAll();
   }
 
-  // ピッケル回復
   function getRegenInterval(){
     const minMs = 500;
     const ms = state.regenBase * Math.pow(0.9, state.regenLevel);
@@ -482,26 +372,18 @@
   function loop(now){
     requestAnimationFrame(loop);
     if (!now) return;
-
-    // 洞窟進捗
     for (const cid in state.caves){
       const cv = state.caves[cid];
       if (cv.status==='running' && now >= cv.endsAt){
         finishCave(cv);
       }
     }
-
-    // ピッケル回復アニメ用
     const dt = now - state.lastTick;
     state.lastTick = now;
-
     state.regenElapsed += dt;
     const interval = getRegenInterval();
-
-    // プログレスUI
     const frac = Math.min(1, state.regenElapsed / interval);
     regenFill.style.width = `${Math.floor(frac*100)}%`;
-
     if (state.regenElapsed >= interval){
       state.regenElapsed -= interval;
       if (state.pick < state.pickMax){
@@ -509,23 +391,18 @@
         pickEl.textContent = state.pick;
       }
     }
-
-    // グリッド中の洞窟進行リングだけは軽く更新
-    // 過剰再描画を避けるため、200msごとにざっくり更新
     if (!loop._acc) loop._acc = 0;
     loop._acc += dt;
     if (loop._acc > 200){
       loop._acc = 0;
-      // 進行中の洞窟がある時のみ
       if (Object.values(state.caves).some(cv=>cv.status==='running')){
         renderAll();
       }
     }
   }
 
-  // UI操作
   el('#buy10').addEventListener('click', ()=>{
-    const price = 500; // 10個で500pt
+    const price = 500;
     if (state.score < price){ ping('スコア不足'); return; }
     if (state.pick >= state.pickMax){ ping('上限です'); return; }
     state.score -= price;
@@ -546,7 +423,6 @@
       if (kind==='regen'){
         state.regenLevel += 1;
       } else if (kind==='max'){
-        // +10ずつ、最大100
         const newMax = Math.min(100, state.pickMax + 10);
         if (newMax === state.pickMax){ ping('最大まで強化済'); renderAll(); return; }
         state.pickMax = newMax;
@@ -561,12 +437,10 @@
   });
 
   function getCost(kind){
-    // 段階的に増える
     if (kind==='regen'){
       return 500 * Math.pow(1.6, state.regenLevel) | 0;
     }
     if (kind==='max'){
-      // 上限100までの有限強化
       const stepsLeft = Math.max(0, (100 - state.pickMax)/10);
       const baseLv = state.maxLevel;
       if (stepsLeft<=0) return 0;
@@ -581,7 +455,6 @@
     return 999;
   }
 
-  // ピッケル絵文字アニメ
   function spawnPickaxe(x,y){
     const span = document.createElement('div');
     span.className = 'pickaxe';
@@ -592,7 +465,6 @@
     setTimeout(()=> span.remove(), 400);
   }
 
-  // トースト
   let toastTimer = null;
   function ping(msg){
     toastEl.textContent = msg;
@@ -601,13 +473,8 @@
     toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1100);
   }
 
-  // セーブ/ロード（ローカル）
   function save(){
-    const data = {
-      ...state,
-      // 大きい配列はOK、ただし関数は除外
-    };
-    localStorage.setItem('mine6x7_save', JSON.stringify(data));
+    localStorage.setItem('mine6x7_save', JSON.stringify(state));
   }
   function load(){
     try{
@@ -615,12 +482,9 @@
       if (!raw) return;
       const data = JSON.parse(raw);
       Object.assign(state, data);
-      // 参照の復旧：特になし
     }catch(e){}
   }
 
-  // 最初の洞窟ちょびっとだけ出すことも
-  // init後に描画
   init();
 })();
 </script>
