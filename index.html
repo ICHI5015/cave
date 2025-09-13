@@ -1,736 +1,679 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>鉱山ゲーム</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<title>鉱山ゲーム 6×7</title>
 <style>
   :root{
-    --bg:#0b0f14;
-    --panel:#121824;
-    --panel2:#0f1420;
-    --text:#e9f1ff;
-    --muted:#a6b0c0;
-    --accent:#5ee7ff;
-    --accent2:#7cffad;
-    --danger:#ff5e7a;
-    --gold:#ffd76a;
-    --tile-gap:6px;
-    --cell:56px; /* スマホで指が届く大きさ */
+    --bg:#0c0f14;
+    --panel:#141a22;
+    --panel-2:#0f141b;
+    --text:#e9f0ff;
+    --muted:#9bb1d0;
+    --accent:#4df0c8;
+    --accent-2:#6ea8ff;
+    --danger:#ff6b6b;
+    --gold:#ffdd73;
+    --cell:64px;      /* SPは後で縮む */
+    --gap:8px;
     --radius:14px;
-    --shadow:0 10px 30px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.03);
+    --shadow:0 8px 24px rgba(0,0,0,.35);
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; background:radial-gradient(1200px 600px at 80% -10%, #152035 0%, #0b0f14 50%, #07090d 100%);
-    color:var(--text); font-family: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
-    display:flex; flex-direction:column; gap:10px; align-items:center;
+
+  @media (max-width:480px){
+    :root{ --cell:54px; --gap:6px; --radius:12px; }
   }
-  header{
-    width:min(560px, 100%); padding:10px 14px; border-radius:18px;
-    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-    box-shadow:var(--shadow); display:flex; gap:10px; align-items:center; justify-content:space-between;
-    position:sticky; top:0; z-index:5; backdrop-filter: blur(10px);
+
+  @media (max-width:380px){
+    :root{ --cell:48px; --gap:5px; --radius:10px; }
   }
-  .stat{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
-  .chip{
-    background:linear-gradient(180deg, #171f30, #0e1422);
-    padding:8px 12px; border-radius:999px; box-shadow:var(--shadow); display:flex; align-items:center; gap:8px; font-weight:700;
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; background:linear-gradient(180deg,#0b0e13,#0a0d12 40%,#080b0f); color:var(--text); font-family: ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", sans-serif; }
+  body{ margin:0; display:flex; flex-direction:column; gap:10px; }
+
+  .topbar{
+    position:sticky; top:0; z-index:10;
+    display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;
+    padding:12px 12px 0;
+    background:linear-gradient(180deg,rgba(12,15,20,.95),rgba(12,15,20,.65),transparent);
+    backdrop-filter:saturate(1.2) blur(8px);
   }
-  .chip small{color:var(--muted); font-weight:600}
-  .meter{color:var(--accent2)}
-  .score{color:var(--gold)}
-  .pick{color:var(--accent)}
-  .buy-btn{
-    background:linear-gradient(180deg, #1a2438, #121a2c); color:var(--text); border:none; padding:8px 12px; border-radius:999px;
-    box-shadow:var(--shadow); font-weight:700; cursor:pointer;
+
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:10px 12px;
+    min-height:56px;
+    display:flex; flex-direction:column; justify-content:center;
   }
-  .buy-btn:active{transform:translateY(1px)}
-  main{
-    width:min(560px, 100%); display:grid; grid-template-columns: 1fr; gap:10px; padding:0 10px 16px;
+
+  .row{ display:flex; align-items:center; gap:10px; }
+  .label{ font-size:12px; color:var(--muted); letter-spacing:.2px; }
+  .value{ font-weight:700; font-size:18px; line-height:1.2; }
+
+  .pick-wrap{ display:flex; align-items:center; gap:8px; }
+  .pick-count{ font-variant-numeric:tabular-nums; }
+  .bar{ position:relative; height:8px; background:#0a1118; border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.06); }
+  .bar > i{ position:absolute; inset:0; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); }
+
+  .main{
+    flex:1; display:flex; flex-direction:column; gap:12px;
+    padding:0 12px 12px;
   }
-  .grid-wrap{
-    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-    border-radius:18px; box-shadow:var(--shadow); padding:12px;
-  }
+
   .grid{
+    margin:0 auto;
     display:grid; grid-template-columns: repeat(6, var(--cell));
-    grid-auto-rows: var(--cell);
-    gap:var(--tile-gap); justify-content:center;
-    touch-action: manipulation;
-  }
-  .cell{
-    width:var(--cell); height:var(--cell); border-radius:12px; position:relative; overflow:hidden;
-    background:#1b2232; box-shadow:inset 0 2px 8px rgba(0,0,0,.5), 0 6px 20px rgba(0,0,0,.25);
+    grid-template-rows: repeat(7, var(--cell));
+    gap:var(--gap);
+    touch-action:manipulation;
     user-select:none;
+    position:relative;
   }
-  .tile{
-    position:absolute; inset:0; border-radius:12px; background-size:cover; background-position:center;
-    display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff;
+
+  .cell{
+    width:var(--cell); height:var(--cell);
+    border-radius:10px;
+    background:#111820;
+    border:1px solid rgba(255,255,255,.05);
+    overflow:hidden; position:relative;
   }
-  .dirt{ background-image:url('dirt.png'); background-color:#7a5234; }
-  .stone{ background-image:url('stone.png'); background-color:#5a6572; }
-  .cave{ background-image:url('cave.png'); background-color:#2a2f3a; }
-  .empty{ background:none; }
+  .cell > img{ width:100%; height:100%; object-fit:cover; display:block; filter:saturate(1.05) contrast(1.05); }
+  .cell.cave::after{
+    content:"";
+    position:absolute; inset:0;
+    background:radial-gradient(120% 120% at 30% 20%, rgba(255,255,255,.12), transparent 40%),
+               radial-gradient(90% 90% at 80% 70%, rgba(77,240,200,.12), transparent 50%);
+    mix-blend-mode:screen; pointer-events:none;
+  }
+
   .overlay{
-    position:absolute; inset:auto 6px 6px 6px; background:rgba(0,0,0,.45);
-    color:var(--text); border-radius:10px; padding:2px 6px; font-size:12px; text-align:center;
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; text-shadow:0 2px 6px rgba(0,0,0,.7);
+    background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.22));
+    font-size:12px; letter-spacing:.5px;
   }
-  .countdown{ color:var(--accent); font-weight:800; }
-  .a{ font-weight:800; font-size: 6px; }
-  .tap-hint{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6);
-    font-size:12px; background:rgba(0,0,0,.18);
+
+  .hud{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
   }
-  .shake{
-    animation:shake .25s ease-in-out both;
+
+  .btn{
+    background:linear-gradient(180deg,#1b2430,#121821);
+    color:var(--text);
+    border:1px solid rgba(255,255,255,.08);
+    padding:10px 12px;
+    border-radius:12px;
+    font-weight:700; letter-spacing:.2px;
+    box-shadow:var(--shadow);
+    display:inline-flex; align-items:center; gap:8px;
   }
-  @keyframes shake{
-    0%{ transform: translate(0,0) rotate(0deg) }
-    25%{ transform: translate(2px,-2px) rotate(-10deg) }
-    50%{ transform: translate(-2px,1px) rotate(8deg) }
-    75%{ transform: translate(1px,2px) rotate(-6deg) }
-    100%{ transform: translate(0,0) rotate(0deg) }
+  .btn:disabled{ opacity:.45; filter:grayscale(.2); }
+
+  .upgrades{
+    display:flex; gap:10px; overflow:auto; padding:6px 2px;
   }
-  .emojix{
-    position:absolute; font-size:22px; pointer-events:none; filter: drop-shadow(0 4px 8px rgba(0,0,0,.6));
-    animation:pop .35s ease-out forwards;
+  .up{ min-width:220px; }
+  .up .label{ font-size:11px; }
+  .up .value{ font-size:14px; color:var(--gold); }
+
+  .panel{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:12px;
+  }
+
+  .cave-jobs{ display:flex; gap:10px; overflow:auto; }
+  .job{
+    min-width:180px;
+    background:#101620; border:1px solid rgba(255,255,255,.06);
+    border-radius:12px; padding:10px;
+  }
+  .job .name{ font-weight:800; }
+  .job .eta{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:12px; }
+  .job .bar{ height:6px; margin-top:6px; }
+  .job .bar > i{ background:linear-gradient(90deg,#ffd36b,#ff9e5a); }
+
+  /* ピッケルアニメ */
+  .pickaxe{
+    position:absolute; z-index:5; pointer-events:none;
+    font-size:22px; filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));
+    animation: swing .28s ease-out both;
+    transform-origin: 70% 20%;
+  }
+  @keyframes swing{
+    0%{ transform: translate(-8px,-8px) rotate(-45deg) scale(1); opacity:0; }
+    40%{ opacity:1; }
+    100%{ transform: translate(4px,6px) rotate(15deg) scale(1); opacity:0; }
+  }
+
+  /* きらり */
+  .pop{
+    position:absolute; z-index:6; pointer-events:none;
+    color:var(--gold); font-weight:800; font-size:14px;
+    animation: pop .6s ease-out both;
+    text-shadow:0 2px 8px rgba(0,0,0,.5);
   }
   @keyframes pop{
-    0%{ opacity:0; transform: translate(-50%,-30%) scale(.6) rotate(-20deg) }
-    60%{ opacity:1; transform: translate(-40%,-70%) scale(1.05) rotate(8deg) }
-    100%{ opacity:0; transform: translate(-30%,-100%) scale(.9) rotate(0deg) }
-  }
-  .controls, .upgrades{
-    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-    border-radius:18px; box-shadow:var(--shadow); padding:12px;
-  }
-  .ctrl-row, .upg-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-  .ctrl-row button, .upg-card button{
-    background:linear-gradient(180deg, #1a2438, #121a2c); color:var(--text); border:none; padding:10px 12px; border-radius:12px;
-    box-shadow:var(--shadow); font-weight:800; cursor:pointer; min-width:110px;
-  }
-  .ctrl-row button:active, .upg-card button:active{ transform:translateY(1px) }
-  .upgrades h3{ margin:6px 2px 10px; font-size:16px; color:var(--muted) }
-  .upg-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px }
-  .upg-card{
-    background:linear-gradient(180deg, #151c2c, #0e1422); border-radius:14px; padding:10px; box-shadow:var(--shadow);
-    display:flex; flex-direction:column; gap:6px;
-  }
-  .upg-title{ font-weight:900 }
-  .upg-meta{ color:var(--muted); font-size:12px }
-  .highlight{ color:var(--accent2) }
-  .note{ color:var(--muted); font-size:12px; text-align:center; margin-top:6px }
-  /* Fallback if images missing */
-  .dirt::after, .stone::after, .cave::after{
-    content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(0,0,0,.18));
-    border-radius:12px;
+    0%{ transform:translateY(0); opacity:0; }
+    10%{ opacity:1; }
+    100%{ transform:translateY(-18px); opacity:0; }
   }
 </style>
 </head>
 <body>
-  <header>
-    <div class="stat">
-      <div class="chip"><span>📏</span><small>深度</small><span class="meter" id="depth">0m</span></div>
-      <div class="chip"><span>💰</span><small>スコア</small><span class="score" id="score">0</span></div>
-      <div class="chip"><span>⛏️</span><small>ピッケル</small><span class="pick" id="pickaxes">50/100</span></div>
+  <div class="topbar">
+    <div class="card">
+      <div class="label">深度</div>
+      <div class="value"><span id="depth">0</span> m</div>
     </div>
-    <button class="buy-btn" id="buyPick">ピッケル購入 +1 (150pt)</button>
-  </header>
-
-  <main>
-    <section class="grid-wrap">
-      <div id="grid" class="grid" aria-label="鉱山グリッド"></div>
-      <p class="note">下段を全部掘るとスクロールして深く潜る。土=100pt(1⛏️)・石=200pt(2⛏️)。</p>
-    </section>
-
-    <section class="controls">
-      <div class="ctrl-row">
-        <button id="reset">リセット</button>
-        <button id="spawnCave">鉱窟を召喚(テスト)</button>
-      </div>
-    </section>
-
-    <section class="upgrades">
-      <h3>アップグレード</h3>
-      <div class="upg-grid">
-        <div class="upg-card">
-          <div class="upg-title">ピッケル回復速度アップ</div>
-          <div class="upg-meta">現在: <span id="u_regen_level" class="highlight">Lv.0</span> / 次コスト: <span id="u_regen_cost">500</span>pt</div>
-          <button id="u_regen_btn">購入</button>
-          <div class="upg-meta">ベース5秒→レベルごとに-10%、最小1秒/個</div>
-        </div>
-        <div class="upg-card">
-          <div class="upg-title">ピッケル最大個数アップ</div>
-          <div class="upg-meta">現在: <span id="u_max_level" class="highlight">Lv.0</span> (<span id="u_max_cap">100</span>) / 次コスト: <span id="u_max_cost">800</span>pt</div>
-          <button id="u_max_btn">購入</button>
-          <div class="upg-meta">レベル毎に+20（上限200）</div>
-        </div>
-        <div class="upg-card">
-          <div class="upg-title">ポイントアップ</div>
-          <div class="upg-meta">現在: <span id="u_mult_level" class="highlight">Lv.0</span> (×<span id="u_mult_val">1.00</span>) / 次コスト: <span id="u_mult_cost">1000</span>pt</div>
-          <button id="u_mult_btn">購入</button>
-          <div class="upg-meta">レベル毎に+10%</div>
-        </div>
-        <div class="upg-card">
-          <div class="upg-title">鉱窟採取個数アップ</div>
-          <div class="upg-meta">現在: <span id="u_cave_level" class="highlight">Lv.0</span> / 次コスト: <span id="u_cave_cost">700</span>pt</div>
-          <button id="u_cave_btn">購入</button>
-          <div class="upg-meta">レベル毎に+2個 採取</div>
+    <div class="card">
+      <div class="label">スコア</div>
+      <div class="value" id="score">0</div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="pick-wrap">
+          <div class="value"><span id="picks">50</span>/<span id="pickMax">50</span> ⛏️</div>
         </div>
       </div>
-    </section>
-  </main>
+      <div class="bar" aria-label="pickaxe regen"><i id="regenBar"></i></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="grid" id="grid" aria-label="mine grid"></div>
+
+    <div class="hud">
+      <button class="btn" id="buyPick">⛏️ +1 を購入 (-150)</button>
+      <div class="label">土=100pt / 石=200pt（コスト: 土1 / 石2）</div>
+    </div>
+
+    <div class="panel">
+      <div class="label">アップグレード</div>
+      <div class="upgrades" id="upgrades"></div>
+    </div>
+
+    <div class="panel">
+      <div class="label">鉱窟探索</div>
+      <div class="cave-jobs" id="jobs"></div>
+    </div>
+  </div>
 
 <script>
-(() => {
-  // ------------------ 基本設定 ------------------
-  const COLS = 6;
-  const ROWS = 7; // 表示行数
-  const POINTS = { dirt:100, stone:200 };
-  const COST_PER_PICK = 150; // スコア購入の1本あたり価格
-  const BASE_REGEN_SEC = 5;  // ベース回復間隔（秒）
-  const MIN_REGEN_SEC = 1;
-  const INIT_PICKS = 50;
-  const INIT_MAX = 100;
-  const MAX_CAP_HARD = 200;
+(function(){
+  // 基本設定
+  const COLS = 6, ROWS = 7;
+  const TYPE = { DIRT:'dirt', STONE:'stone', CAVE:'cave', EMPTY:'empty' };
+  const COST = { dirt:1, stone:2 };
+  const BASE_PT = { dirt:100, stone:200 };
+  const CAVE_SIZE = { small:1, medium:2, large:3 };
+  const CAVE_TIME = { small:30, medium:60, large:120 }; // 秒
+  const CAVE_BASE_REWARD = { small:300, medium:800, large:1800 }; // ベースpt
+  const CAVE_BASE_PICK = { small:1, medium:2, large:4 }; // おまけ⛏️
 
-  // 鉱窟の探索時間（秒）
-  const CAVE_TIME = { small:30, medium:60, large:120 };
-  // 鉱窟の基礎採取個数
-  const CAVE_BASE_HARVEST = { small:4, medium:8, large:16 };
+  // 状態
+  let grid = []; // 2D [row][col] 下が最大row-1（視覚は上から並べる）
+  let score = 0;
+  let depth = 0;
 
-  // 鉱石の出現率（新行生成時）
-  const SPAWN = {
-    dirt: 0.6,
-    stone: 0.35,
-    cave: 0.05 // cave は後で実サイズ抽選
+  let pickMax = 50; // 初期上限
+  let picks = 50;   // 初期本数
+  const HARD_CAP = 100;
+
+  // 回復関連（初期：3秒に1本）
+  let regenPer = 3.0; // 秒/1本（小さいほど速い）
+  let regenProg = 0;  // 0..1 表示用
+  let regenAccum = 0; // 秒累積
+
+  // マルチプライヤ
+  let pointMul = 1.0; // ポイントアップ
+  let caveMul = 1.0;  // 鉱窟採取数（報酬倍率）
+
+  // アップグレード状態
+  const upgrades = {
+    speed:{ name:'ピッケル回復速度アップ', lvl:0, baseCost:500, costMul:1.6, effect:()=>{ regenPer = Math.max(0.8, 3.0 * Math.pow(0.85, upgrades.speed.lvl)); } },
+    max:{ name:'ピッケル最大個数アップ', lvl:0, baseCost:400, costMul:1.7, effect:()=>{ pickMax = Math.min(HARD_CAP, 50 + upgrades.max.lvl*10); updatePicksUI(); } },
+    point:{ name:'ポイントアップ', lvl:0, baseCost:600, costMul:1.7, effect:()=>{ pointMul = 1 + upgrades.point.lvl*0.2; } },
+    cave:{ name:'鉱窟採取個数アップ', lvl:0, baseCost:550, costMul:1.65, effect:()=>{ caveMul = 1 + upgrades.cave.lvl*0.25; } },
   };
 
-  // ------------------ 状態 ------------------
-  const state = {
-    grid: [],           // 可視領域7行×6列
-    depth: 0,           // m
-    score: 0,
-    pick: INIT_PICKS,
-    maxPick: INIT_MAX,
-    regenLevel: 0,
-    maxLevel: 0,
-    multLevel: 0,
-    caveLevel: 0,
-    lastRegenTime: performance.now(),
-    regenResidual: 0,   // サブ秒の積み上げ
-    caves: new Map(),   // caveId -> {size,status,remain, cells:[{r,c}], startedAt}
-    nextCaveId: 1
-  };
+  // DOM
+  const elGrid = document.getElementById('grid');
+  const elScore = document.getElementById('score');
+  const elDepth = document.getElementById('depth');
+  const elPicks = document.getElementById('picks');
+  const elPickMax = document.getElementById('pickMax');
+  const elRegenBar = document.getElementById('regenBar');
+  const elUpgrades = document.getElementById('upgrades');
+  const elJobs = document.getElementById('jobs');
+  const elBuyPick = document.getElementById('buyPick');
 
-  // ------------------ DOM ------------------
-  const gridEl = document.getElementById('grid');
-  const depthEl = document.getElementById('depth');
-  const scoreEl = document.getElementById('score');
-  const picksEl = document.getElementById('pickaxes');
-  const buyPickBtn = document.getElementById('buyPick');
-
-  const uRegenLevel = document.getElementById('u_regen_level');
-  const uRegenCost = document.getElementById('u_regen_cost');
-  const uRegenBtn = document.getElementById('u_regen_btn');
-
-  const uMaxLevel = document.getElementById('u_max_level');
-  const uMaxCap = document.getElementById('u_max_cap');
-  const uMaxCost = document.getElementById('u_max_cost');
-  const uMaxBtn = document.getElementById('u_max_btn');
-
-  const uMultLevel = document.getElementById('u_mult_level');
-  const uMultVal = document.getElementById('u_mult_val');
-  const uMultCost = document.getElementById('u_mult_cost');
-  const uMultBtn = document.getElementById('u_mult_btn');
-
-  const uCaveLevel = document.getElementById('u_cave_level');
-  const uCaveCost = document.getElementById('u_cave_cost');
-  const uCaveBtn = document.getElementById('u_cave_btn');
-
-  const resetBtn = document.getElementById('reset');
-  const spawnCaveBtn = document.getElementById('spawnCave');
-
-  // ------------------ ユーティリティ ------------------
-  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
-  const rand = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
-
-  function pointsMult(){
-    return 1 + state.multLevel * 0.10;
-  }
-  function regenIntervalMs(){
-    const sec = Math.max(MIN_REGEN_SEC, BASE_REGEN_SEC * Math.pow(0.9, state.regenLevel));
-    return sec * 1000;
-  }
-  function caveExtraHarvest(){
-    return state.caveLevel * 2;
-  }
-  function upgradeCost(kind, level){
-    // シンプルな逓増
-    switch(kind){
-      case 'regen': return Math.floor(500 * Math.pow(1.6, level));
-      case 'max':   return Math.floor(800 * Math.pow(1.55, level));
-      case 'mult':  return Math.floor(1000* Math.pow(1.75, level));
-      case 'cave':  return Math.floor(700 * Math.pow(1.6, level));
+  // 初期化
+  function init(){
+    grid = [];
+    for(let r=0;r<ROWS;r++){
+      grid.push(genRow());
     }
+    // 最初にちょいだけ洞窟の可能性を低く
+    stampRandomCaveOnBottom();
+
+    renderGrid();
+    renderUpgrades();
+    updateScore(0);
+    updateDepth(0);
+    updatePicksUI();
   }
 
-  // ------------------ グリッド生成 ------------------
-  function makeEmptyCell(){
-    return { type:'empty', hp:0, caveId:null };
-  }
-  function makeBlock(type){
-    if(type==='dirt') return { type:'dirt', hp:1, caveId:null };
-    if(type==='stone') return { type:'stone', hp:2, caveId:null };
-    return makeEmptyCell();
-  }
-
-  // 行生成：洞窟は確率的にサイズを選び、置ければ置く
-  function generateRow(){
-    // まず全セルを dirt/stoneで初期化
-    const row = Array.from({length:COLS}, ()=>{
-      const r = Math.random();
-      if(r < SPAWN.dirt) return makeBlock('dirt');
-      if(r < SPAWN.dirt + SPAWN.stone) return makeBlock('stone');
-      return makeBlock(Math.random()<0.5 ? 'dirt':'stone'); // fallback
-    });
-
-    // 洞窟抽選
-    if(Math.random() < SPAWN.cave){
-      const sizes = ['small','medium','large'];
-      const sizeWeights = [0.6, 0.3, 0.1];
-      let p = Math.random();
-      let size = 'small';
-      if(p > 0.6) size = (p > 0.9) ? 'large' : 'medium';
-      // この行単体だと medium/large は縦に必要。上の行にまたがるので、生成はキューして後で配置
-      // ここではsmallのみ確実に置く（1x1）。medium/largeは後続ロジックでたまに作る。
-      if(size==='small'){
-        const c = rand(0,COLS-1);
-        row[c] = { type:'cave', size:'small', hp:Infinity, caveId: null, status:'idle' };
-      }
+  // 行生成（ランダムに土/石）
+  function genRow(){
+    const row = [];
+    for(let c=0;c<COLS;c++){
+      const isStone = Math.random() < 0.35; // 35%石
+      row.push(makeCell(isStone ? TYPE.STONE : TYPE.DIRT));
     }
     return row;
   }
 
-  // medium/large の洞窟を無理なく時々配置（グリッド全体見て空間があれば置く）
-  function tryPlaceBiggerCave(){
-    const sizes = [
-      {name:'large', w:3,h:3, chance:0.05},
-      {name:'medium',w:2,h:2, chance:0.10}
-    ];
-    for(const s of sizes){
-      if(Math.random() < s.chance){
-        // 空き領域探索（stone/dirt上でも置く、置いた領域は洞窟化）
-        const maxR = ROWS - s.h;
-        const maxC = COLS - s.w;
-        const r0 = rand(0,maxR);
-        const c0 = rand(0,maxC);
-        // 重複洞窟は避けたいので、既にcaveなセルが混ざっていたらスキップ
-        for(let rr=r0; rr<r0+s.h; rr++){
-          for(let cc=c0; cc<c0+s.w; cc++){
-            if(state.grid[rr][cc].type==='cave'){ return; }
-          }
-        }
-        // 設置
-        const id = state.nextCaveId++;
-        const cells = [];
-        for(let rr=r0; rr<r0+s.h; rr++){
-          for(let cc=c0; cc<c0+s.w; cc++){
-            state.grid[rr][cc] = { type:'cave', size:s.name, hp:Infinity, caveId:id, status:'idle' };
-            cells.push({r:rr,c:cc});
-          }
-        }
-        state.caves.set(id, { id, size:s.name, status:'idle', remain:CAVE_TIME[s.name], cells, startedAt:null });
+  function makeCell(type, meta={}){
+    return { type, meta:{ ...meta } };
+  }
+
+  // ランダムで洞窟クラスターをボトムにスタンプ
+  function stampRandomCaveOnBottom(){
+    const chance = 0.22; // 新行追加時に22%で洞窟
+    if(Math.random() > chance) return;
+
+    // サイズ抽選：大はややレア
+    const r = Math.random();
+    const size = r<0.55 ? CAVE_SIZE.small : (r<0.88 ? CAVE_SIZE.medium : CAVE_SIZE.large);
+    const label = size===1?'small':(size===2?'medium':'large');
+
+    // 配置可能な最左x
+    const maxLeft = COLS - size;
+    const x0 = Math.floor(Math.random()*(maxLeft+1));
+
+    // ボトムから size 行ぶんにスタンプ（足りなければある分だけ）
+    for(let dy=0; dy<size; dy++){
+      const rr = ROWS-1 - dy; // 下から上へ
+      if(rr<0) break;
+      for(let dx=0; dx<size; dx++){
+        const cc = x0 + dx;
+        // セルを洞窟に
+        grid[rr][cc] = makeCell(TYPE.CAVE, { caveId: null, size, label });
       }
     }
+
+    // 洞窟ジョブを作成＆開始
+    startCaveJob({ size, label, area:size*size, progress:0, t:0, dur:CAVE_TIME[label] });
   }
 
-  function initGrid(){
-    state.grid = [];
-    for(let r=0;r<ROWS;r++){
-      state.grid.push(generateRow());
-    }
-    // たまに大きい洞窟
-    tryPlaceBiggerCave();
-    state.depth = 0;
-  }
+  // 洞窟ジョブ
+  let caveJobs = [];
+  let caveSeq = 1;
 
-  // ------------------ レンダリング ------------------
-  function render(){
-    depthEl.textContent = state.depth + 'm';
-    scoreEl.textContent = Math.floor(state.score);
-    picksEl.textContent = `${state.pick}/${state.maxPick}`;
+  function startCaveJob(job){
+    const id = caveSeq++;
+    job.id = id;
+    caveJobs.push(job);
 
-    // アップグレード表示
-    uRegenLevel.textContent = 'Lv.'+state.regenLevel;
-    uRegenCost.textContent = upgradeCost('regen', state.regenLevel);
-    uMaxLevel.textContent = 'Lv.'+state.maxLevel;
-    uMaxCap.textContent = state.maxPick;
-    uMaxCost.textContent = upgradeCost('max', state.maxLevel);
-    uMultLevel.textContent = 'Lv.'+state.multLevel;
-    uMultVal.textContent = pointsMult().toFixed(2);
-    uMultCost.textContent = upgradeCost('mult', state.multLevel);
-    uCaveLevel.textContent = 'Lv.'+state.caveLevel;
-    uCaveCost.textContent = upgradeCost('cave', state.caveLevel);
-
-    // グリッド
-    gridEl.innerHTML = '';
+    // スタンプしたセルに id を刻む（最新の洞窟に付ける）
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
-        const cell = document.createElement('div');
-        cell.className='cell';
-        cell.dataset.r=r; cell.dataset.c=c;
-
-        const t = state.grid[r][c];
-        const tile = document.createElement('div');
-        tile.classList.add('tile');
-        tile.classList.add(t.type);
-        if(t.type==='dirt') tile.title='土 100pt / 1⛏️';
-        if(t.type==='stone') tile.title='石 200pt / 2⛏️';
-
-        // 洞窟の見た目とカウントダウン
-        if(t.type==='cave'){
-          // 同じcaveIdの中で左上セルだけにUIを持たせる
-          const cid = t.caveId ?? findCaveIdAt(r,c);
-          if(cid){
-            const cave = state.caves.get(cid);
-            if(isTopLeftOfCave(cid, r, c)){
-              const ov = document.createElement('div');
-              ov.className='overlay';
-              const sizeJ = cave.size==='small'?'小':(cave.size==='medium'?'中':'大');
-              if(cave.status==='idle'){
-                ov.innerHTML = `鉱窟(${sizeJ})`;
-              }else if(cave.status==='running'){
-                ov.innerHTML = `<span class="a">探索中…</span><br><span class="countdown">${formatTime(cave.remain)}</span>`;
-              }else if(cave.status==='done'){
-                ov.innerHTML = `採取完了！<br><span class="countdown">タップで回収</span>`;
-              }
-              tile.appendChild(ov);
-            }
-          }else{
-            // small 単体はcidないことがあるので、idle風のヒント
-            const ov = document.createElement('div');
-            ov.className='overlay';
-            ov.innerHTML = `鉱窟(小)`;
-            tile.appendChild(ov);
-          }
+        const cell = grid[r][c];
+        if(cell.type===TYPE.CAVE && !cell.meta.caveId && cell.meta.size===job.size){
+          cell.meta.caveId = id;
         }
-
-        cell.appendChild(tile);
-        gridEl.appendChild(cell);
       }
     }
+    renderJobs();
   }
 
-  function isTopLeftOfCave(caveId, r, c){
-    const cave = state.caves.get(caveId);
-    if(!cave) return false;
-    let minR=999, minC=999;
-    cave.cells.forEach(p=>{ minR=Math.min(minR,p.r); minC=Math.min(minC,p.c); });
-    return r===minR && c===minC;
-  }
+  function completeCaveJob(job){
+    // 報酬（倍率適用）
+    const baseP = CAVE_BASE_REWARD[job.label];
+    const baseK = CAVE_BASE_PICK[job.label];
+    const pts = Math.round(baseP * pointMul * caveMul);
+    const ks  = Math.max(0, Math.floor(baseK * caveMul));
 
-  function findCaveIdAt(r,c){
-    for(const [id,cave] of state.caves.entries()){
-      if(cave.cells.some(p=>p.r===r && p.c===c)) return id;
-    }
-    return null;
-  }
+    updateScore(pts);
+    addPicks(ks);
 
-  function formatTime(sec){
-    sec = Math.max(0, Math.ceil(sec));
-    const m = Math.floor(sec/60), s=sec%60;
-    return m>0 ? `${m}:${String(s).padStart(2,'0')}` : `0:${String(s).padStart(2,'0')}`;
-  }
-
-  // ------------------ 行スクロール ------------------
-function checkAndScroll(force=false){
-  if(force){
-    // 一番上を捨てて、下から新行
-    state.grid.shift();
-    state.grid.push(generateRow());
-    tryPlaceBiggerCave();
-    // 洞窟セルの座標更新
-    for(const cave of state.caves.values()){
-      cave.cells.forEach(p=>p.r = p.r-1);
-    }
-    // 画面外に消えた洞窟を除去
-    for(const [id,cave] of Array.from(state.caves.entries())){
-      const stillVisible = cave.cells.some(p => p.r>=0 && p.r<ROWS);
-      if(!stillVisible) state.caves.delete(id);
-    }
-    state.depth += 1;
-    render();
-  }
-}
-
-
-  // ------------------ 掘る処理 ------------------
-  function tryMine(r,c){
-    const t = state.grid[r][c];
-    if(t.type==='dirt' || t.type==='stone'){
-      const cost = t.type==='dirt' ? 1 : 2;
-      if(state.pick < cost) return flashCell(r,c,'⛏️不足');
-      state.pick -= cost;
-      animatePick(r,c);
-
-      // アニメーション感
-      const cellEl = getCellEl(r,c);
-      if(cellEl) cellEl.classList.add('shake');
-      setTimeout(()=>cellEl && cellEl.classList.remove('shake'), 260);
-
-      t.hp -= cost; // 一気に削る（コストでhp=0以下に）
-      if(t.hp <= 0){
-        // スコア加算（倍率）
-        const gained = Math.floor( (POINTS[t.type] || 0) * pointsMult() );
-        state.score += gained;
-        state.grid[r][c] = makeEmptyCell();
+    // 洞窟セルを空に（掘り切った扱い）
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const cell = grid[r][c];
+        if(cell.type===TYPE.CAVE && cell.meta.caveId===job.id){
+          grid[r][c] = makeCell(TYPE.EMPTY);
+        }
       }
-      render();
- if(r === ROWS-1) checkAndScroll(true);
-
-    } else if(t.type==='cave'){
-      handleCaveTap(r,c);
     }
+    caveJobs = caveJobs.filter(j=>j.id!==job.id);
+    renderJobs();
+    renderGrid();
+    flashFloat(elGrid, `+${pts}pt ⛏️+${ks}`, {color:'#ffdd73'});
   }
 
-  function flashCell(r,c,msg){
-    const el = getTileEl(r,c);
-    if(!el) return;
-    const hint = document.createElement('div');
-    hint.className='tap-hint';
-    hint.textContent = msg;
-    el.appendChild(hint);
-    setTimeout(()=>hint.remove(), 450);
-  }
-
-  function animatePick(r,c){
-    const cell = getCellEl(r,c);
+  // 採掘
+  function mineCell(r, c){
+    const cell = grid[r][c];
     if(!cell) return;
-    const em = document.createElement('div');
-    em.className='emojix';
-    em.textContent='⛏️';
-    em.style.left='50%';
-    em.style.top='50%';
-    cell.appendChild(em);
-    setTimeout(()=>em.remove(), 360);
-  }
 
-  function getCellEl(r,c){
-    return gridEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-  }
-  function getTileEl(r,c){
-    const cell = getCellEl(r,c);
-    return cell ? cell.querySelector('.tile') : null;
-  }
-
-  // ------------------ 鉱窟処理 ------------------
-  function handleCaveTap(r,c){
-    const id = findCaveIdAt(r,c);
-    let cave;
-    if(id){
-      cave = state.caves.get(id);
-    }else{
-      // small単発（1x1）をその場で登録
-      const newId = state.nextCaveId++;
-      cave = { id:newId, size:'small', status:'idle', remain:CAVE_TIME.small, cells:[{r,c}], startedAt:null };
-      state.caves.set(newId, cave);
-      state.grid[r][c].caveId = newId;
+    if(cell.type===TYPE.EMPTY) return;
+    if(cell.type===TYPE.CAVE){
+      // 洞窟は自動探索。クリックでは何もしない
+      flashFloatCell(r,c,'探索中…',{color:'#6ea8ff'});
+      return;
     }
 
-    if(cave.status==='idle'){
-      cave.status='running';
-      cave.remain=CAVE_TIME[cave.size];
-      cave.startedAt = performance.now();
-    }else if(cave.status==='running'){
-      // なにもしない（進行中）
-    }else if(cave.status==='done'){
-      // 採取結果を回収して洞窟を消す
-      harvestFromCave(cave);
-      // 洞窟セルを空に戻す
-      cave.cells.forEach(p => state.grid[p.r][p.c] = makeEmptyCell());
-      state.caves.delete(cave.id);
-      render();
-      checkAndScroll();
+    const t = cell.type;
+    const need = COST[t];
+    if(picks < need){
+      flashFloatCell(r,c,'⛏️不足',{color:'#ff6b6b'});
+      return;
+    }
+
+    // ピッケル消費
+    addPicks(-need);
+
+    // ピッケルアニメ
+    spawnPickaxeFX(r,c);
+
+    // スコア加算（倍率）
+    const gain = Math.round(BASE_PT[t] * pointMul);
+    updateScore(gain);
+    flashFloatCell(r,c,`+${gain}`,{color:'#ffdd73'});
+
+    // 採掘済みに
+    grid[r][c] = makeCell(TYPE.EMPTY);
+    renderCell(r,c);
+
+    // 一番下の段だったらスクロール＆+1m
+    if(r === ROWS-1){
+      shiftDownOne();
+      updateDepth(1);
+      // 新しい一番下に洞窟抽選
+      stampRandomCaveOnBottom();
+      renderGrid();
     }
   }
 
-  function harvestFromCave(cave){
-    // いま見えてる掘れるブロックからランダムにいくつか自動採取（ポイントのみ獲得、ピッケル消費なし）
-    const candidates = [];
+  function shiftDownOne(){
+    // 上の段を消し、下に新しい行
+    grid.shift();            // 先頭（最上段）を削除
+    grid.push(genRow());     // 新規行を最下段に
+  }
+
+  // UI更新
+  function updateScore(delta){
+    score += delta;
+    if(score<0) score = 0;
+    elScore.textContent = score;
+    refreshButtons();
+  }
+
+  function updateDepth(delta){
+    depth += delta;
+    elDepth.textContent = depth;
+  }
+
+  function updatePicksUI(){
+    if(picks > pickMax) picks = pickMax;
+    elPicks.textContent = picks;
+    elPickMax.textContent = pickMax;
+  }
+
+  function addPicks(n){
+    picks = Math.max(0, Math.min(pickMax, picks + n));
+    updatePicksUI();
+  }
+
+  function refreshButtons(){
+    // 購入ボタン
+    elBuyPick.disabled = score < 150 || picks >= pickMax;
+    // アプグレ
+    for(const btn of elUpgrades.querySelectorAll('button[data-key]')){
+      const key = btn.getAttribute('data-key');
+      const cost = getUpgradeCost(key);
+      btn.disabled = score < cost || (key==='max' && pickMax>=HARD_CAP);
+      btn.querySelector('.u-cost').textContent = cost;
+      btn.querySelector('.u-lvl').textContent = upgrades[key].lvl;
+    }
+  }
+
+  // グリッド描画
+  function renderGrid(){
+    elGrid.innerHTML = '';
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
-        const t = state.grid[r][c];
-        if(t.type==='dirt' || t.type==='stone'){
-          candidates.push({r,c,type:t.type});
+        const cell = grid[r][c];
+        const div = document.createElement('div');
+        div.className = 'cell';
+        div.dataset.r = r;
+        div.dataset.c = c;
+
+        const img = document.createElement('img');
+        if(cell.type===TYPE.DIRT){
+          img.src = 'dirt.png';
+          img.alt = 'dirt';
+        }else if(cell.type===TYPE.STONE){
+          img.src = 'stone.png';
+          img.alt = 'stone';
+        }else if(cell.type===TYPE.CAVE){
+          img.src = 'cave.png';
+          img.alt = 'cave';
+          div.classList.add('cave');
+          const ov = document.createElement('div');
+          ov.className='overlay';
+          ov.textContent = '鉱窟';
+          div.appendChild(ov);
+        }else{
+          img.style.opacity = .08;
         }
-      }
-    }
-    const base = CAVE_BASE_HARVEST[cave.size] || 4;
-    const total = base + caveExtraHarvest();
-    let picks = Math.min(total, candidates.length);
-    let gained = 0;
-
-    // 近いセルを優先（洞窟の重心に近い順）
-    const cx = cave.cells.reduce((a,p)=>a+p.c,0)/cave.cells.length;
-    const cy = cave.cells.reduce((a,p)=>a+p.r,0)/cave.cells.length;
-    candidates.sort((A,B)=>{
-      const dA = (A.c-cx)**2 + (A.r-cy)**2;
-      const dB = (B.c-cx)**2 + (B.r-cy)**2;
-      return dA - dB;
-    });
-
-    for(let i=0;i<picks;i++){
-      const it = candidates[i];
-      const val = Math.floor( (POINTS[it.type]||0) * pointsMult() );
-      gained += val;
-      // 消す
-      state.grid[it.r][it.c] = makeEmptyCell();
-      // ちょい演出
-      sparkAt(it.r,it.c);
-    }
-    state.score += gained;
-  }
-
-  function sparkAt(r,c){
-    const el = getCellEl(r,c);
-    if(!el) return;
-    const em = document.createElement('div');
-    em.className='emojix';
-    em.textContent = '💥';
-    em.style.left='50%'; em.style.top='50%';
-    el.appendChild(em);
-    setTimeout(()=>em.remove(), 360);
-  }
-
- function tickCaves(dt){
-  for(const cave of state.caves.values()){
-    if(cave.status==='running'){
-      cave.remain -= dt/1000;
-      if(cave.remain <= 0){
-        cave.remain = 0;
-        cave.status = 'done';
-
-        // 自動採取（ポイント加算＆ブロック破壊）
-        harvestFromCave(cave);
-
-        // 洞窟は残す（セルはcaveのまま）
-        // 状態だけ「done」にして render() で「探索済み」表示にできる
-      }
-    }
-  }
-}
-
-
-
-  // ------------------ ピッケル回復/購入 ------------------
-  function regenTick(dt){
-    // サブタイム管理で決まった間隔ごとに+1
-    const interval = regenIntervalMs();
-    state.regenResidual += dt;
-    while(state.regenResidual >= interval){
-      state.regenResidual -= interval;
-      if(state.pick < state.maxPick){
-        state.pick++;
-      }else{
-        // いっぱいなら残余をリセットして無駄回し防止
-        state.regenResidual = 0;
-        break;
+        div.appendChild(img);
+        elGrid.appendChild(div);
       }
     }
   }
 
-  function buyPick(){
-    if(state.score >= COST_PER_PICK && state.pick < state.maxPick){
-      state.score -= COST_PER_PICK;
-      state.pick += 1;
-      render();
+  function renderCell(r,c){
+    const idx = r*COLS + c;
+    const div = elGrid.children[idx];
+    const cell = grid[r][c];
+    if(!div) return;
+    div.className = 'cell';
+    div.innerHTML = '';
+    const img = document.createElement('img');
+    if(cell.type===TYPE.DIRT){
+      img.src='dirt.png'; img.alt='dirt';
+    }else if(cell.type===TYPE.STONE){
+      img.src='stone.png'; img.alt='stone';
+    }else if(cell.type===TYPE.CAVE){
+      img.src='cave.png'; img.alt='cave';
+      div.classList.add('cave');
+      const ov = document.createElement('div');
+      ov.className='overlay';
+      ov.textContent='鉱窟';
+      div.appendChild(ov);
+    }else{
+      img.style.opacity=.08;
     }
+    div.appendChild(img);
   }
 
-  // ------------------ アップグレード購入 ------------------
-  function tryBuyUpgrade(kind){
-    const level = kind==='regen'? state.regenLevel :
-                  kind==='max'  ? state.maxLevel   :
-                  kind==='mult' ? state.multLevel  :
-                  state.caveLevel;
-    const cost = upgradeCost(kind, level);
-    if(state.score < cost) return;
-
-    state.score -= cost;
-    if(kind==='regen'){
-      state.regenLevel++;
-      // 即時体感のため、残余をリセット（新間隔に馴染ませる）
-      state.regenResidual = 0;
-    }else if(kind==='max'){
-      state.maxLevel++;
-      state.maxPick = clamp(INIT_MAX + state.maxLevel*20, INIT_MAX, MAX_CAP_HARD);
-      state.pick = Math.min(state.pick, state.maxPick);
-    }else if(kind==='mult'){
-      state.multLevel++;
-    }else if(kind==='cave'){
-      state.caveLevel++;
-    }
-    render();
-  }
-
-  // ------------------ 入力 ------------------
-  gridEl.addEventListener('click', (e)=>{
+  // クリック/タップ
+  elGrid.addEventListener('click', (e)=>{
     const cell = e.target.closest('.cell');
     if(!cell) return;
     const r = +cell.dataset.r;
     const c = +cell.dataset.c;
-    tryMine(r,c);
+    if(Number.isFinite(r)&&Number.isFinite(c)){
+      mineCell(r,c);
+    }
   });
 
-  buyPickBtn.addEventListener('click', buyPick);
-  resetBtn.addEventListener('click', ()=>{
-    // すべて初期化
-    state.score = 0;
-    state.pick = INIT_PICKS;
-    state.maxPick = INIT_MAX;
-    state.regenLevel = 0;
-    state.maxLevel = 0;
-    state.multLevel = 0;
-    state.caveLevel = 0;
-    state.caves.clear();
-    state.nextCaveId = 1;
-    state.regenResidual = 0;
-    initGrid();
-    render();
+  // ピッケル購入
+  elBuyPick.addEventListener('click', ()=>{
+    const cost = 150;
+    if(score < cost) return;
+    if(picks >= pickMax) return;
+    updateScore(-cost);
+    addPicks(1);
+    flashFloat(elBuyPick, '⛏️ +1', {color:'#4df0c8'});
   });
 
-  uRegenBtn.addEventListener('click', ()=>tryBuyUpgrade('regen'));
-  uMaxBtn.addEventListener('click', ()=>tryBuyUpgrade('max'));
-  uMultBtn.addEventListener('click', ()=>tryBuyUpgrade('mult'));
-  uCaveBtn.addEventListener('click', ()=>tryBuyUpgrade('cave'));
+  // アップグレードUI
+  function getUpgradeCost(key){
+    const u = upgrades[key];
+    return Math.round(u.baseCost * Math.pow(u.costMul, u.lvl));
+  }
 
-  // テスト用：今の領域に中/大をたまに置く
-  spawnCaveBtn.addEventListener('click', ()=>{
-    tryPlaceBiggerCave();
-    render();
-  });
+  function renderUpgrades(){
+    elUpgrades.innerHTML = '';
+    for(const [key,u] of Object.entries(upgrades)){
+      const card = document.createElement('div');
+      card.className = 'card up';
+      const btn = document.createElement('button');
+      btn.className = 'btn'; btn.setAttribute('data-key', key);
+      btn.innerHTML = `
+        <div style="text-align:left">
+          <div class="label">${u.name}</div>
+          <div class="value">Lv.<span class="u-lvl">${u.lvl}</span> / Cost: <span class="u-cost">${getUpgradeCost(key)}</span></div>
+        </div>
+      `;
+      btn.addEventListener('click', ()=>{
+        const cost = getUpgradeCost(key);
+        if(score < cost) return;
+        updateScore(-cost);
+        u.lvl++;
+        u.effect();
+        refreshButtons();
+        flashFloat(btn, 'UP!', {color:'#6ea8ff'});
+      });
+      card.appendChild(btn);
+      elUpgrades.appendChild(card);
+    }
+    refreshButtons();
+  }
 
-  // ------------------ ループ ------------------
-  let lastTime = performance.now();
+  // 洞窟ジョブ表示
+  function renderJobs(){
+    elJobs.innerHTML = '';
+    if(caveJobs.length===0){
+      const hint = document.createElement('div');
+      hint.className='label';
+      hint.textContent = '今は探索なし。掘り進めると見つかるかも。';
+      elJobs.appendChild(hint);
+      return;
+    }
+    for(const job of caveJobs){
+      const d = document.createElement('div');
+      d.className='job';
+      const name = job.size===1?'小さな鉱窟':(job.size===2?'中くらいの鉱窟':'大きな鉱窟');
+      d.innerHTML = `
+        <div class="name">${name}</div>
+        <div class="eta"><span class="t">${Math.ceil(job.dur - job.t)}</span> 秒</div>
+        <div class="bar"><i style="width:${(job.t/job.dur)*100}%"></i></div>
+      `;
+      elJobs.appendChild(d);
+      job._el = d;
+    }
+  }
+
+  // ループ（回復＆洞窟）
+  let last = performance.now();
   function loop(now){
-    const dt = now - lastTime;
-    lastTime = now;
+    const dt = Math.min(0.1, (now - last)/1000); // 秒
+    last = now;
 
-    regenTick(dt);
-    tickCaves(dt);
+    // ピッケル回復
+    if(picks < pickMax){
+      regenAccum += dt;
+      if(regenAccum >= regenPer){
+        const n = Math.floor(regenAccum / regenPer);
+        regenAccum -= n * regenPer;
+        addPicks(n);
+      }
+      regenProg = regenPer>0 ? (regenAccum/regenPer) : 1;
+    }else{
+      regenAccum = 0;
+      regenProg = 0;
+    }
+    elRegenBar.style.width = (regenProg*100)+'%';
 
-    // 1秒に2回くらい描画（無駄更新を避けたいがシンプルに）
-    if(now % 300 < 16) render();
+    // 洞窟ジョブ進行
+    for(const job of caveJobs.slice()){
+      job.t += dt;
+      if(job._el){
+        job._el.querySelector('.t').textContent = Math.max(0, Math.ceil(job.dur - job.t));
+        job._el.querySelector('.bar > i').style.width = Math.min(100, (job.t/job.dur)*100) + '%';
+      }
+      if(job.t >= job.dur){
+        completeCaveJob(job);
+      }
+    }
 
     requestAnimationFrame(loop);
   }
 
-  // ------------------ スタート ------------------
-  initGrid();
-  render();
+  // 演出
+  function spawnPickaxeFX(r,c){
+    const rect = elGrid.getBoundingClientRect();
+    const cell = elGrid.children[r*COLS + c].getBoundingClientRect();
+    const x = cell.left - rect.left + cell.width/2;
+    const y = cell.top - rect.top + cell.height/2;
+
+    const span = document.createElement('span');
+    span.className='pickaxe';
+    span.textContent='⛏️';
+    span.style.left = (x - 10) + 'px';
+    span.style.top  = (y - 18) + 'px';
+    elGrid.appendChild(span);
+    setTimeout(()=> span.remove(), 400);
+  }
+
+  function flashFloat(target, text, opt={}){
+    const rect = target.getBoundingClientRect();
+    const host = target.closest('.grid') || document.body;
+    const base = host===document.body ? document.body : host;
+    const x = rect.left + rect.width/2;
+    const y = rect.top;
+
+    const sp = document.createElement('span');
+    sp.className='pop';
+    sp.textContent = text;
+    sp.style.color = opt.color || '#ffdd73';
+
+    const parentRect = base.getBoundingClientRect();
+    sp.style.left = (x - parentRect.left - 10) + 'px';
+    sp.style.top  = (y - parentRect.top - 10) + 'px';
+    base.appendChild(sp);
+    setTimeout(()=> sp.remove(), 700);
+  }
+  function flashFloatCell(r,c,text,opt={}){
+    const rect = elGrid.getBoundingClientRect();
+    const cell = elGrid.children[r*COLS + c].getBoundingClientRect();
+    const x = cell.left - rect.left + cell.width/2;
+    const y = cell.top - rect.top + 6;
+
+    const sp = document.createElement('span');
+    sp.className='pop';
+    sp.textContent = text;
+    sp.style.left = (x - 10) + 'px';
+    sp.style.top  = (y) + 'px';
+    sp.style.color = opt.color || '#ffdd73';
+    elGrid.appendChild(sp);
+    setTimeout(()=> sp.remove(), 700);
+  }
+
+  // スタート
+  init();
   requestAnimationFrame(loop);
 })();
 </script>
