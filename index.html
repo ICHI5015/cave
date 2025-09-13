@@ -77,7 +77,8 @@
     position:absolute; inset:auto 6px 6px 6px; background:rgba(0,0,0,.45);
     color:var(--text); border-radius:10px; padding:2px 6px; font-size:12px; text-align:center;
   }
-  .countdown{ color:var(--accent); font-weight:800 }
+  .countdown{ color:var(--accent); font-weight:800; }
+  .a{ font-weight:800; font-size: 6px; }
   .tap-hint{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6);
     font-size:12px; background:rgba(0,0,0,.18);
@@ -402,7 +403,7 @@
               if(cave.status==='idle'){
                 ov.innerHTML = `鉱窟(${sizeJ})`;
               }else if(cave.status==='running'){
-                ov.innerHTML = `探索中…<br><span class="countdown">${formatTime(cave.remain)}</span>`;
+                ov.innerHTML = `<span class="a">探索中…</span><br><span class="countdown">${formatTime(cave.remain)}</span>`;
               }else if(cave.status==='done'){
                 ov.innerHTML = `採取完了！<br><span class="countdown">タップで回収</span>`;
               }
@@ -604,16 +605,25 @@ function checkAndScroll(force=false){
     setTimeout(()=>em.remove(), 360);
   }
 
-  function tickCaves(dt){
-    for(const cave of state.caves.values()){
-      if(cave.status==='running'){
-        cave.remain -= dt/1000;
-        if(cave.remain <= 0){
-          cave.remain = 0; cave.status='done';
-        }
+ function tickCaves(dt){
+  for(const cave of state.caves.values()){
+    if(cave.status==='running'){
+      cave.remain -= dt/1000;
+      if(cave.remain <= 0){
+        cave.remain = 0;
+        cave.status = 'done';
+
+        // 自動採取（ポイント加算＆ブロック破壊）
+        harvestFromCave(cave);
+
+        // 洞窟は残す（セルはcaveのまま）
+        // 状態だけ「done」にして render() で「探索済み」表示にできる
       }
     }
   }
+}
+
+
 
   // ------------------ ピッケル回復/購入 ------------------
   function regenTick(dt){
