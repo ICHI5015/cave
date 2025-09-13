@@ -384,6 +384,7 @@
   }
 
  function onCell(e){
+     e.preventDefault(); // スマホでの二重発火防止
   const now = performance.now();
   if (now < mineCooldown) return; // クールダウン中は無視
   mineCooldown = now + 300; // 300ms 後まで掘れない
