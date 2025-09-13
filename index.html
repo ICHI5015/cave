@@ -1,715 +1,681 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
 <title>鉱山ゲーム</title>
+  <link rel="icon" type="image/png" href="cave.png">
+
 <style>
   :root{
-    --bg:#0b0f14;
-    --panel:#111820;
-    --accent:#59f5c6;
-    --accent-2:#ff7bd5;
-    --text:#e9f1f7;
-    --muted:#9fb3c8;
-    --warn:#ffd166;
-    --danger:#ff6b6b;
-
-    --cell: min(12.5vw, 64px); /* スマホ優先サイズ */
+    --cols: 6;
+    --rows: 7;
     --gap: 6px;
-    --radius: 12px;
-    --soft: 10px;
+    --ui-pad: 10px;
+    --cell: min(14.8vw, 62px);
+    --radius: 10px;
+    --bg: #0b0f14;
+    --panel: #101822;
+    --panel-2: #0c131c;
+    --text: #e9f1ff;
+    --muted: #a6b3c6;
+    --accent: #56d364;
+    --accent-2: #33b3ff;
+    --warn: #ffb020;
+    --danger: #ff5d5d;
+    --shadow: 0 10px 24px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
-  html,body{margin:0; padding:0; background:linear-gradient(180deg,#0b0f14,#0b0f14 60%,#0a0d12); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Helvetica Neue", Arial, "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;}
-  #app{max-width: 480px; margin: 0 auto; padding: 16px 14px 28px;}
+  html,body{margin:0;background:linear-gradient(180deg,#0b0f14 0%,#0b0f14 40%,#061019 100%);color:var(--text);font-family: ui-sans-serif,system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";}
+  .wrap{max-width: calc(var(--cell) * var(--cols) + var(--gap)*(var(--cols)-1) + 24px); margin: 10px auto 80px; padding: 10px;}
   header{
-    display:grid; grid-template-columns: 1fr 1fr; grid-auto-rows: auto; gap: 8px;
-    position: sticky; top:0; background:linear-gradient(180deg, rgba(11,15,20,.95), rgba(11,15,20,.7) 60%, rgba(11,15,20,0));
-    backdrop-filter: blur(6px); padding-bottom: 6px; z-index: 10;
+    display:grid; gap:8px; grid-template-columns: 1fr; margin-bottom: 8px;
   }
-  .card{
-    background: linear-gradient(180deg, #0f1621, #0e141d);
-    border: 1px solid #1c2633;
-    border-radius: var(--radius);
-    box-shadow: 0 10px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+  .bar{
+    background: linear-gradient(180deg,var(--panel) 0%, var(--panel-2) 100%);
+    border:1px solid #182332; border-radius:14px; padding:10px; box-shadow: var(--shadow);
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;
   }
-  .stat{padding: 10px 12px; display:flex; align-items:center; justify-content: space-between; gap: 10px;}
-  .stat b{font-size: 14px; color: var(--muted); font-weight:600;}
-  .stat .val{font-size: 18px; font-weight:700; letter-spacing:.2px;}
-  .row{display:flex; align-items:center; gap:8px;}
+  .stat{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .pill{
-    background: #0b121a;
-    border: 1px solid #1b2938;
-    border-radius: 999px; padding: 6px 10px; font-size: 12px; color: var(--muted);
+    background:#0b1622; border:1px solid #1b2a3d; border-radius:999px; padding:6px 10px; display:flex; align-items:center; gap:8px; color:var(--text); font-weight:600; font-size:14px;
   }
-  .accent{ color: var(--accent); }
-  .accent2{ color: var(--accent-2); }
-
-  /* グリッド */
-  #grid{
-    margin-top: 10px;
-    display: grid;
-    grid-template-columns: repeat(6, var(--cell));
-    grid-auto-rows: var(--cell);
-    gap: var(--gap);
-    justify-content: center;
-    padding: 12px;
-    position: relative;
+  .pill .small{color:var(--muted); font-weight:600; font-size:12px;}
+  .meter{display:flex; align-items:center; gap:6px;}
+  .progress{
+    width:120px; height:12px; background:#0c1016; border:1px solid #1b2a3d; border-radius:999px; position:relative; overflow:hidden;
+  }
+  .progress > i{position:absolute; inset:0; width:0%; background: linear-gradient(90deg, #2dd4bf 0%, #22c55e 100%);}
+  .grid-wrap{
+    background: linear-gradient(180deg, #0b0f14 0%, #0f1622 100%);
+    border:1px solid #182332; border-radius:16px; padding:12px; box-shadow: var(--shadow);
+  }
+  .grid{
+    display:grid; grid-template-columns: repeat(var(--cols), var(--cell)); grid-template-rows: repeat(var(--rows), var(--cell));
+    gap: var(--gap); justify-content:center; position:relative;
   }
   .cell{
-    width: var(--cell); height: var(--cell);
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    background: #0d1219;
-    border: 1px solid #1a2230;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), inset 0 -10px 18px rgba(0,0,0,.35);
-    touch-action: manipulation;
+    width:var(--cell); height:var(--cell); border-radius:8px; position:relative; overflow:hidden; transform:translateZ(0);
+    background:#0a121c; border:1px solid #182332; box-shadow: inset 0 2px 0 rgba(255,255,255,0.05), inset 0 -3px 4px rgba(0,0,0,0.4);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
-  .cell img{
-    width:100%; height:100%; object-fit: cover; display:block; pointer-events:none;
-    filter: contrast(1.02) saturate(1.05);
+  .cell:active{ transform: scale(0.98); }
+  .tex{
+    position:absolute; inset:0; background-size:cover; background-position:center; filter:brightness(.95) contrast(1.05);
   }
-  .cell .overlay{
+  .overlay{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-size: 12px; color:#fff; text-shadow: 0 1px 2px rgba(0,0,0,.5);
-    background: linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.25));
   }
-  .cell .progress{
-    position:absolute; left:0; right:0; bottom:0; height:6px; border-radius:6px;
-    background: rgba(255,255,255,.06);
+  .cave-timer{
+    position:absolute; bottom:6px; left:6px; right:6px; height:6px; border-radius:999px; background:rgba(0,0,0,.35); overflow:hidden; border:1px solid rgba(255,255,255,.07);
   }
-  .cell .progress > i{
-    display:block; height:100%; width:0%; border-radius:6px;
-    background: linear-gradient(90deg, var(--accent), #8afff0);
-    box-shadow: 0 0 12px rgba(89,245,198,.5);
+  .cave-timer > i{display:block; height:100%; width:0%; background: linear-gradient(90deg, #f59e0b, #10b981);}
+  .badge{
+    position:absolute; top:6px; right:6px; font-size:11px; padding:3px 6px; border-radius:999px; border:1px solid rgba(255,255,255,.15); color:#fff;
+    background: linear-gradient(180deg, #1e293b, #0f172a);
+    text-shadow: 0 1px 0 rgba(0,0,0,.6);
   }
-
-  /* ピッケルアニメーション */
-  .fx{
-    position:absolute; width: 28px; height: 28px; transform-origin: 60% 90%;
-    font-size: 22px; line-height: 28px; text-align:center; pointer-events:none;
-    animation: swing .38s ease-in-out forwards;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,.6));
+  .pick-anim{
+    position:absolute; font-size: clamp(20px, 6vw, 32px); pointer-events:none; transform-origin: 70% 90%;
+    animation: swing .35s ease-out forwards;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,.45));
   }
-  @keyframes swing {
-    0% { transform: translate(0,0) rotate(-35deg); opacity: 0; }
-    40%{ transform: translate(-6px, -8px) rotate(0deg); opacity: 1; }
-    100%{ transform: translate(8px, 10px) rotate(30deg); opacity: .05; }
-  }
-  .spark{
-    position:absolute; font-size: 16px; animation: pop .5s ease-out forwards; pointer-events:none;
-    filter: drop-shadow(0 2px 6px rgba(255,255,255,.7));
-  }
-  @keyframes pop{
-    0%{ transform: translate(0,0) scale(.7); opacity: 0; }
+  @keyframes swing{
+    0%{ transform: translate(-10%, -10%) rotate(-35deg) scale(1); opacity:0; }
     30%{ opacity:1; }
-    100%{ transform: translate(0,-14px) scale(1.1); opacity:0; }
+    60%{ transform: translate(10%,-20%) rotate(20deg) scale(1.05); }
+    100%{ transform: translate(20%,-30%) rotate(0deg) scale(.9); opacity:0; }
   }
-
-  /* コントロールエリア */
-  #controls{ display:grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
-  .panel{ padding: 12px; }
-  .buttons{ display:flex; gap:8px; flex-wrap: wrap; }
-  button{
-    appearance: none; border: 1px solid #1b2938; background: #0b121a; color: var(--text);
-    padding: 10px 12px; border-radius: 10px; font-weight: 700; letter-spacing:.2px;
-    box-shadow: 0 10px 18px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.03);
+  .controls{
+    display:grid; grid-template-columns: 1fr; gap:10px; margin-top:10px;
   }
-  button.primary{
-    background: linear-gradient(180deg, #1c2f3f, #132536);
-    border-color:#2b4054;
+  .panel{
+    background: linear-gradient(180deg,var(--panel) 0%, var(--panel-2) 100%);
+    border:1px solid #182332; border-radius:14px; padding:12px; box-shadow: var(--shadow);
   }
-  button:disabled{ opacity:.55; }
-
-  .upg{
-    display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center;
-    padding:10px; border-radius:10px; border:1px solid #1b2938; background:#0b121a;
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;}
+  .btn{
+    appearance:none; border:1px solid #26374d; background: linear-gradient(180deg, #152132, #0f1a28);
+    color:#eaf2ff; padding:10px 12px; border-radius:10px; font-weight:700; letter-spacing:.02em; cursor:pointer;
+    box-shadow: 0 2px 0 rgba(255,255,255,.05), inset 0 -2px 0 rgba(0,0,0,.35);
   }
-  .upg h4{ margin:0; font-size:14px; }
-  .upg small{ color:var(--muted); }
-  .upg .lvl{ font-weight:800; color:var(--accent); }
-  .upg .cost{ color:var(--warn); font-weight:700; }
-
-  .hint{
-    color: var(--muted); font-size: 12px; padding: 4px 2px 0;
+  .btn.small{padding:8px 10px; font-weight:600;}
+  .btn:disabled{opacity:.5; cursor:not-allowed; filter:saturate(.5);}
+  .btn.accent{border-color:#1f4e3a; background: linear-gradient(180deg, #0f2d22, #0b221a);}
+  .btn.blue{border-color:#1a3f66; background: linear-gradient(180deg, #0e2134, #0a1a29);}
+  .label{color:var(--muted); font-size:12px;}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;}
+  .toast{
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #0c1622; color:#eaf2ff; border:1px solid #193149; padding:10px 12px; border-radius:10px; box-shadow: var(--shadow); font-weight:700; pointer-events:none; opacity:0; transition:.25s;
   }
-
-  footer{ margin-top: 14px; text-align:center; color: var(--muted); font-size: 11px; }
+  .toast.show{opacity:1; transform: translateX(-50%) translateY(-6px);}
+  footer{color:var(--muted); text-align:center; font-size:12px; margin-top:14px;}
+  @media (min-width: 540px){
+    .controls{grid-template-columns: 1fr 1fr;}
+  }
 </style>
 </head>
 <body>
-<div id="app">
+<div class="wrap">
   <header>
-    <div class="card stat">
-      <b>スコア</b>
-      <div class="val" id="scoreVal">0</div>
-    </div>
-    <div class="card stat">
-      <b>深さ</b>
-      <div class="val"><span id="depthVal">0</span> m</div>
-    </div>
-    <div class="card stat" style="grid-column:1 / -1;">
-      <div class="row">
-        <b>ピッケル</b>
-        <span class="pill"><span id="pickVal">50</span>/<span id="pickMax">50</span></span>
-        <span class="pill">回復 <span id="regenInfo">1/5s</span></span>
+    <div class="bar">
+      <div class="stat">
+        <span class="pill"><span>⛏️</span><span id="picks">50</span>/<span id="picksMax">100</span></span>
+        <span class="pill"><span>⭐</span><span id="score">0</span>pt</span>
+        <span class="pill"><span>📏</span><span id="depth">0</span> m</span>
       </div>
-      <div class="row">
-        <button id="buy1" class="primary">+1（100pt）</button>
-        <button id="buy10" class="primary">+10（1000pt）</button>
+      <div class="meter">
+        <span class="small label">回復</span>
+        <div class="progress"><i id="regenBar"></i></div>
+        <span id="regenLabel" class="small mono">+1 / 5s</span>
       </div>
     </div>
   </header>
 
-  <main class="card panel">
-    <div id="grid" aria-label="mine grid"></div>
-    
-  </main>
+  <div class="grid-wrap">
+    <div id="grid" class="grid" aria-label="mine grid"></div>
+  </div>
 
-  <section id="controls">
-    <div class="card panel">
-      <h3 style="margin:0 0 8px 0; font-size:16px;">アップグレード</h3>
-      <div class="upg">
-        <div>
-          <h4>ピッケル回復速度アップ <span class="lvl">Lv.<span id="uRegenLvl">0</span></span></h4>
-          <small>回復効率 +20%/Lv（現在: <span id="uRegenRate">1/5s</span>）</small>
-        </div>
-        <button id="uRegenBtn"><span class="cost" id="uRegenCost">500pt</span></button>
-      </div>
-      <div class="upg">
-        <div>
-          <h4>ピッケル最大個数アップ <span class="lvl">Lv.<span id="uMaxLvl">0</span></span></h4>
-          <small>上限 +10/Lv（現在: <span id="uMaxNow">50</span>）</small>
-        </div>
-        <button id="uMaxBtn"><span class="cost" id="uMaxCost">500pt</span></button>
-      </div>
-      <div class="upg">
-        <div>
-          <h4>ポイントアップ <span class="lvl">Lv.<span id="uPtsLvl">0</span></span></h4>
-          <small>獲得ポイント +10%/Lv（現在倍率: <span id="uPtsNow">1.00×</span>）</small>
-        </div>
-        <button id="uPtsBtn"><span class="cost" id="uPtsCost">800pt</span></button>
-      </div>
-      <div class="upg">
-        <div>
-          <h4>鉱窟採取個数アップ <span class="lvl">Lv.<span id="uCaveLvl">0</span></span></h4>
-          <small>鉱窟の報酬 +20%/Lv</small>
-        </div>
-        <button id="uCaveBtn"><span class="cost" id="uCaveCost">800pt</span></button>
+  <div class="controls">
+    <div class="panel">
+      <div class="row" style="justify-content:flex-start; gap:6px 10px;">
+        <span class="label">ピッケル購入（スコア消費）</span>
+        <button class="btn blue small" id="buy1">+1 ⛏️ (-120pt)</button>
+        <button class="btn blue small" id="buy10">+10 ⛏️ (-1200pt)</button>
+        <button class="btn blue small" id="buyMax">MAXまで</button>
       </div>
     </div>
-  </section>
 
-  <footer>画像: dirt.png / stone.png / cave.png を同じフォルダに置いてね。</footer>
+    <div class="panel">
+      <div class="row" style="gap:10px;">
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+          <div>
+            <div class="label">ピッケル回復速度アップ Lv.<span id="uRegenLv">0</span>（最短1s）</div>
+            <button class="btn accent small" id="uRegenBtn">購入: <span id="uRegenCost">500</span>pt</button>
+          </div>
+          <div>
+            <div class="label">ピッケル最大個数アップ Lv.<span id="uMaxLv">0</span>（上限100）</div>
+            <button class="btn accent small" id="uMaxBtn">購入: <span id="uMaxCost">800</span>pt</button>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+          <div>
+            <div class="label">ポイントアップ Lv.<span id="uPointLv">0</span>（+10%/Lv）</div>
+            <button class="btn accent small" id="uPointBtn">購入: <span id="uPointCost">700</span>pt</button>
+          </div>
+          <div>
+            <div class="label">鉱窟採取個数アップ Lv.<span id="uCaveLv">0</span>（+1個/Lv）</div>
+            <button class="btn accent small" id="uCaveBtn">購入: <span id="uCaveCost">600</span>pt</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer></footer>
 </div>
+
+<div id="toast" class="toast"></div>
 
 <script>
 (() => {
-  // ====== 基本設定 ======
-  const COLS = 6;
-  const ROWS = 7;
+  // Game constants
+  const COLS = 6, ROWS = 7;
+  const DIRT = 'dirt', STONE = 'stone', CAVE = 'cave', EMPTY='empty';
+  const DIRT_PT = 100, STONE_PT = 200;
+  const DIRT_COST = 1, STONE_COST = 2;
+  const PICK_PRICE = 120; // pt per pick
+  const MAX_PICK_CAP = 100;
+  const REGEN_BASE_SEC = 5; // +1 pick per X sec baseline
+  const REGEN_MIN_SEC = 1;
+  const CAVE_TIMES = { small: 30_000, medium: 60_000, large: 120_000 }; // ms
+  const CAVE_SIZES = { small:1, medium:2, large:3 };
+  const CAVE_WEIGHTS = [ ['small', 0.6], ['medium', 0.3], ['large',0.1] ];
+  const CAVE_SPAWN_CHANCE = 0.12; // per new row attempt
+  const SAVE_KEY = 'mini-mine-v1';
 
-  const DIRT = 'dirt';
-  const STONE = 'stone';
-  const CAVE = 'cave';
-  const EMPTY = 'empty';
-
-  const BASE_POINTS = { dirt: 100, stone: 200 };
-  const COST_PICK = { dirt: 1, stone: 2 };
-
-  // 鉱窟サイズと時間（ミリ秒）
-  const CAVE_INFO = {
-    1: { secs: 30, baseScore: 300, basePicks: 5 },
-    2: { secs: 60, baseScore: 800, basePicks: 12 },
-    3: { secs: 120, baseScore: 2000, basePicks: 25 },
+  // State
+  const state = {
+    grid: [], // [row][col] -> cell object
+    depth: 0,
+    score: 0,
+    picks: 50,
+    picksMax: 100,
+    upgrades: {
+      regen: 0, // faster regen
+      max: 0,   // increases max picks (up to 100)
+      point: 0, // +10% per level
+      cave: 0   // +1 loot per level
+    },
+    caves: {}, // caveId -> {sizeName, size, cells:[{r,c}], startedAt, totalMs, progressMs, done}
+    regen: { accMs: 0 },
   };
 
-  // ピッケル回復：ベースは 1本/5秒
-  const BASE_REGEN_PER_SEC = 1/5; // 0.2 / sec
+  // Upgrade costs (scaling)
+  const costBase = { regen: 500, max: 800, point: 700, cave: 600 };
+  const costGrowth = 1.6;
 
-  // ====== 状態 ======
-  let score = 0;
-  let depth = 0;
+  // DOM
+  const el = {
+    grid: document.getElementById('grid'),
+    score: document.getElementById('score'),
+    depth: document.getElementById('depth'),
+    picks: document.getElementById('picks'),
+    picksMax: document.getElementById('picksMax'),
+    regenLabel: document.getElementById('regenLabel'),
+    regenBar: document.getElementById('regenBar'),
+    toast: document.getElementById('toast'),
+    buy1: document.getElementById('buy1'),
+    buy10: document.getElementById('buy10'),
+    buyMax: document.getElementById('buyMax'),
+    uRegenBtn: document.getElementById('uRegenBtn'),
+    uMaxBtn: document.getElementById('uMaxBtn'),
+    uPointBtn: document.getElementById('uPointBtn'),
+    uCaveBtn: document.getElementById('uCaveBtn'),
+    uRegenLv: document.getElementById('uRegenLv'),
+    uMaxLv: document.getElementById('uMaxLv'),
+    uPointLv: document.getElementById('uPointLv'),
+    uCaveLv: document.getElementById('uCaveLv'),
+    uRegenCost: document.getElementById('uRegenCost'),
+    uMaxCost: document.getElementById('uMaxCost'),
+    uPointCost: document.getElementById('uPointCost'),
+    uCaveCost: document.getElementById('uCaveCost'),
+  };
 
-  let pick = 50;
-  let pickMax = 50;
-  let regenLvl = 0; // +20%/Lv
-  let maxLvl = 0;   // +10 cap / Lv
-  let ptsLvl = 0;   // +10%/Lv
-  let caveLvl = 0;  // +20%/Lv
-
-  let regenAcc = 0; // 回復の小数累積
-
-  // グリッド可視領域（先頭が最上段、末尾が最下段）
-  let visible = []; // [row][col] -> cell object
-  // 先読みの行バッファ（新しい下段を補充するためのキュー）
-  let queue = [];
-
-  // 鉱窟グループ状態
-  let caveSeq = 1;
-  const caves = new Map(); // id -> {size, state:'idle'|'exploring'|'done', endAt:number, cells:[{r,c}]}
-
-  // ====== 参照 ======
-  const $grid = document.getElementById('grid');
-  const $scoreVal = document.getElementById('scoreVal');
-  const $depthVal = document.getElementById('depthVal');
-  const $pickVal = document.getElementById('pickVal');
-  const $pickMax = document.getElementById('pickMax');
-  const $regenInfo = document.getElementById('regenInfo');
-
-  const $buy1 = document.getElementById('buy1');
-  const $buy10 = document.getElementById('buy10');
-
-  const $uRegenLvl = document.getElementById('uRegenLvl');
-  const $uRegenRate = document.getElementById('uRegenRate');
-  const $uRegenCost = document.getElementById('uRegenCost');
-
-  const $uMaxLvl = document.getElementById('uMaxLvl');
-  const $uMaxNow = document.getElementById('uMaxNow');
-  const $uMaxCost = document.getElementById('uMaxCost');
-
-  const $uPtsLvl = document.getElementById('uPtsLvl');
-  const $uPtsNow = document.getElementById('uPtsNow');
-  const $uPtsCost = document.getElementById('uPtsCost');
-
-  const $uCaveLvl = document.getElementById('uCaveLvl');
-  const $uCaveCost = document.getElementById('uCaveCost');
-
-  const $uRegenBtn = document.getElementById('uRegenBtn');
-  const $uMaxBtn = document.getElementById('uMaxBtn');
-  const $uPtsBtn = document.getElementById('uPtsBtn');
-  const $uCaveBtn = document.getElementById('uCaveBtn');
-
-  // ====== 生成ユーティリティ ======
-  const rand = (a,b)=> Math.floor(Math.random()*(b-a+1))+a;
-  const chance = (p)=> Math.random() < p;
-
-  // 洞窟の事前配置用マスク：queueインデックス基準で (rowIdx)->Set of col で埋めるのではなく、行データ自体に直書きして管理する
-  function makeCell(type, extra={}) {
-    return { type, ...extra }; // cave: { caveId }, exploring overlay: tie to cave state
+  function rand(){ return Math.random(); }
+  function choiceWeighted(entries){
+    const total = entries.reduce((s, [,w]) => s+w, 0);
+    let r = rand()*total;
+    for(const [k,w] of entries){ if((r-=w) <= 0) return k; }
+    return entries[0][0];
   }
 
-  // 一行生成（洞窟はここで開始・配置）
-  function generateRowWithCaves(queueRowIndex, preplanned=null) {
-    // 土/石の基本配分（石:30%〜40%程度）
-    const row = Array.from({length: COLS}, () => {
-      const isStone = chance(0.35);
-      return makeCell(isStone ? STONE : DIRT);
+  function pointMultiplier(){
+    return 1 + 0.10 * state.upgrades.point;
+  }
+
+  function regenIntervalMs(){
+    const factor = Math.pow(0.9, state.upgrades.regen);
+    const sec = Math.max(REGEN_MIN_SEC, REGEN_BASE_SEC * factor);
+    return sec*1000;
+  }
+
+  function nextUpgradeCost(key){
+    const lv = state.upgrades[key];
+    return Math.floor(costBase[key] * Math.pow(costGrowth, lv));
+  }
+
+  function newCell(type, caveId=null){
+    return { type, caveId }; // type: 'dirt'|'stone'|'cave'
+  }
+
+  function initGrid(){
+    state.grid = [];
+    for(let r=0;r<ROWS;r++){
+      state.grid[r] = genRow();
+    }
+  }
+
+  function genRow(){
+    // Create a base row (dirt/stone)
+    const row = new Array(COLS).fill(0).map(() => {
+      const isStone = Math.random() < 0.35; // 35% stone baseline
+      return newCell(isStone ? STONE : DIRT);
     });
 
-    // 既に事前配置（上位からの洞窟拡張）があれば適用
-    if (preplanned) {
-      for (const {c, caveId} of preplanned) {
-        row[c] = makeCell(CAVE, { caveId });
+    // Maybe spawn cave cluster
+    if(Math.random() < CAVE_SPAWN_CHANCE){
+      const sizeName = choiceWeighted(CAVE_WEIGHTS);
+      const size = CAVE_SIZES[sizeName];
+      // Try to place within the new row and possibly above rows if size > 1
+      // Cave top-left row will be current "bottom-1" (since this row is at bottom index ROWS-1).
+      // To keep it simple, only spawn caves that fully fit within bottom 3 rows window.
+      const maxTop = ROWS-1; // we'll stamp across rows [top ... top+size-1], must be < ROWS
+      const top = Math.max(0, (ROWS-1) - (size-1));
+      const left = Math.floor(Math.random() * (COLS - size + 1));
+
+      const caveId = 'cv_' + Math.random().toString(36).slice(2,9);
+      const cells = [];
+      // Ensure we have rows up to top+size-1
+      for(let rr=0; rr<ROWS; rr++){
+        if(!state.grid[rr]) state.grid[rr] = new Array(COLS).fill(0).map(() => newCell(DIRT));
       }
-    }
-
-    // ランダムで新規洞窟を開始（小:やや出やすい / 中:たまに / 大:まれ）
-    // 複数は避け、1行につき最大1つの開始にしてバランス調整
-    if (!row.some(cell => cell.type === CAVE)) {
-      const roll = Math.random();
-      let size = 0;
-      if (roll < 0.06) size = 3;
-      else if (roll < 0.14) size = 2;
-      else if (roll < 0.28) size = 1;
-
-      if (size > 0) {
-        const startCols = COLS - size + 1;
-        const c0 = rand(0, startCols - 1);
-
-        // この行から下に size 行必要。queue 側の将来行に埋める
-        const caveId = caveSeq++;
-        const cellsRefs = [];
-
-        // 可視やキューにまたがるため、とりあえずこの行は配置
-        for (let dc=0; dc<size; dc++) {
-          const col = c0 + dc;
-          row[col] = makeCell(CAVE, { caveId });
-          cellsRefs.push({ r: null, c: col }); // r は可視に入るタイミングで確定
+      for(let dr=0; dr<size; dr++){
+        const r = top + dr;
+        for(let dc=0; dc<size; dc++){
+          const c = left + dc;
+          state.grid[r][c] = newCell(CAVE, caveId);
+          cells.push({r, c});
         }
-
-        // 将来の (size-1) 行にも配置予約を入れる
-        ensureQueueLength(queueRowIndex + size); // size 行先まで確保
-        for (let dr=1; dr<size; dr++) {
-          const targetRow = queue[queueRowIndex + dr];
-          for (let dc=0; dc<size; dc++) {
-            const col = c0 + dc;
-            targetRow[col] = makeCell(CAVE, { caveId });
-            cellsRefs.push({ r: null, c: col });
-          }
-        }
-
-        // 洞窟状態を準備（state は共有）
-        caves.set(caveId, { size, state:'idle', endAt:0, cells: cellsRefs });
       }
+      state.caves[caveId] = { sizeName, size, cells, startedAt:null, totalMs: CAVE_TIMES[sizeName], progressMs:0, done:false };
     }
-
     return row;
   }
 
-  function ensureQueueLength(minLen){
-    while(queue.length < minLen){
-      // 予備行は事前配置なしで仮埋め（後で generateRowWithCaves で置換される可能性）
-      queue.push(Array.from({length: COLS}, () => makeCell(chance(0.35)?STONE:DIRT)));
-    }
-  }
-
-  function fillQueue(initial=false){
-    const target = initial ? 40 : 12; // 初期は多めに先読み
-    let i = queue.length;
-    while(queue.length < target){
-      const row = generateRowWithCaves(i);
-      queue.push(row);
-      i++;
-    }
-  }
-
-  // ====== 初期セットアップ ======
-  function init() {
-    visible = [];
-    queue = [];
-    caves.clear();
-    caveSeq = 1;
-
-    fillQueue(true);
-
-    // 可視行を先頭から7行取り出す
-    for(let i=0;i<ROWS;i++){
-      visible.push(queue.shift());
-    }
-
-    renderAll();
-    loop();
-  }
-
-  // ====== 描画 ======
-  function renderAll(){
-    renderStats();
+  function shiftDownOneMeter(){
+    // Remove the top row, push a new row at the bottom
+    state.grid.shift();
+    state.grid.push(genRow());
+    state.depth += 1;
+    renderHUD();
     renderGrid();
-    renderUpgrades();
   }
 
-  function renderStats(){
-    $scoreVal.textContent = Math.floor(score);
-    $depthVal.textContent = depth;
-    $pickVal.textContent = pick;
-    $pickMax.textContent = pickMax;
-
-    const rate = regenPerSec();
-    // 表示は "x/ys" の感じでざっくり
-    const per = rate.toFixed(2) + "/s";
-    $regenInfo.textContent = per;
-    $uRegenRate.textContent = per;
+  function addScore(pts){
+    const mult = pointMultiplier();
+    state.score += Math.floor(pts * mult);
+    renderHUD();
   }
 
-  function cellImgSrc(cell){
-    if(cell.type === DIRT) return 'dirt.png';
-    if(cell.type === STONE) return 'stone.png';
-    if(cell.type === CAVE) return 'cave.png';
+  function spendScore(pts){
+    if(state.score < pts) return false;
+    state.score -= pts;
+    renderHUD();
+    return true;
+  }
+
+  function addPicks(n){
+    state.picks = Math.min(state.picks + n, state.picksMax);
+    renderHUD();
+  }
+
+  function spendPicks(n){
+    if(state.picks < n) return false;
+    state.picks -= n;
+    renderHUD();
+    return true;
+  }
+
+  function mineCell(r,c, targetEl, pageX, pageY){
+    const cell = state.grid[r][c];
+    if(!cell) return;
+
+    if(cell.type === CAVE){
+      handleCaveTap(cell.caveId, r, c);
+      return;
+    }
+
+    if(cell.type === DIRT){
+      if(!spendPicks(DIRT_COST)){ toast('⛏️不足'); return; }
+      addScore(DIRT_PT);
+      animatePick(targetEl, pageX, pageY);
+      state.grid[r][c] = newCell(EMPTY);
+    }else if(cell.type === STONE){
+      if(!spendPicks(STONE_COST)){ toast('⛏️不足（石は2個）'); return; }
+      addScore(STONE_PT);
+      animatePick(targetEl, pageX, pageY);
+      state.grid[r][c] = newCell(EMPTY);
+    }else if(cell.type === EMPTY){
+      toast('そこは空だよ');
+      return;
+    }
+
+    // If mined in bottom row, go 1m deeper immediately
+    if(r === ROWS-1){
+      shiftDownOneMeter();
+    }else{
+      // Just re-render the single cell
+      renderCell(r,c);
+    }
+
+    save();
+  }
+
+  function handleCaveTap(caveId, r, c){
+    const cave = state.caves[caveId];
+    if(!cave || cave.done) return;
+    if(!cave.startedAt){
+      cave.startedAt = performance.now();
+      toast(`鉱窟探索開始（${cave.sizeName}）`);
+      renderGrid(); // draws timer bars
+    }else{
+      // show remaining
+      const remaining = Math.max(0, cave.totalMs - cave.progressMs);
+      toast(`探索中… 残り ${Math.ceil(remaining/1000)}s`);
+    }
+  }
+
+  function completeCave(caveId){
+    const cave = state.caves[caveId];
+    if(!cave || cave.done) return;
+    cave.done = true;
+
+    // Loot calculation: base 120pt per tile × tiles × (1 + caveLv)
+    const tiles = cave.size * cave.size;
+    const lootCount = tiles * (1 + state.upgrades.cave);
+    const lootPt = 120 * lootCount;
+    addScore(lootPt);
+
+    // Clear cave cells to empty
+    cave.cells.forEach(({r,c}) => { if(state.grid[r]?.[c]?.caveId === caveId){ state.grid[r][c] = newCell(EMPTY); } });
+    toast(`鉱窟探索完了！ +${Math.floor(lootPt * pointMultiplier())}pt`);
+    renderGrid();
+    save();
+  }
+
+  function updateCaves(dt){
+    for(const [id, cave] of Object.entries(state.caves)){
+      if(!cave.startedAt || cave.done) continue;
+      cave.progressMs = Math.min(cave.totalMs, cave.progressMs + dt);
+      if(cave.progressMs >= cave.totalMs){
+        completeCave(id);
+      }
+    }
+  }
+
+  // Rendering
+  function renderHUD(){
+    el.score.textContent = state.score;
+    el.depth.textContent = state.depth;
+    el.picks.textContent = state.picks;
+    el.picksMax.textContent = state.picksMax;
+
+    // Regen label
+    const interval = regenIntervalMs()/1000;
+    el.regenLabel.textContent = `+1 / ${interval.toFixed(2).replace(/\.00$/,'')}s`;
+
+    // Upgrades text & costs
+    el.uRegenLv.textContent = state.upgrades.regen;
+    el.uMaxLv.textContent = state.upgrades.max;
+    el.uPointLv.textContent = state.upgrades.point;
+    el.uCaveLv.textContent = state.upgrades.cave;
+    el.uRegenCost.textContent = nextUpgradeCost('regen');
+    el.uMaxCost.textContent = nextUpgradeCost('max');
+    el.uPointCost.textContent = nextUpgradeCost('point');
+    el.uCaveCost.textContent = nextUpgradeCost('cave');
+
+    // Disable max upgrade if at cap
+    el.uMaxBtn.disabled = state.picksMax >= MAX_PICK_CAP && state.upgrades.max >= 0; // keep purchasable until reaches cap
+    // Buy buttons disable if already at cap and full
+    const canBuyAny = state.picks < state.picksMax && state.score >= PICK_PRICE;
+    el.buy1.disabled = !(state.score >= PICK_PRICE && state.picks < state.picksMax);
+    el.buy10.disabled = !(state.score >= PICK_PRICE*10 && state.picks < state.picksMax);
+    el.buyMax.disabled = !canBuyAny;
+  }
+
+  function cellTextureStyle(cell){
+    if(cell.type === DIRT) return 'background-image:url(dirt.png)';
+    if(cell.type === STONE) return 'background-image:url(stone.png)';
+    if(cell.type === CAVE) return 'background-image:url(cave.png)';
+    if(cell.type === EMPTY) return 'background:linear-gradient(180deg,#091119,#0a1017)';
     return '';
   }
 
   function renderGrid(){
-    // クリア
-    $grid.innerHTML = '';
-    // グリッドを描く（上→下）
-    for (let r=0;r<ROWS;r++){
-      for (let c=0;c<COLS;c++){
-        const cell = visible[r][c];
+    // Build DOM once, update in place
+    const frag = document.createDocumentFragment();
+    el.grid.innerHTML = '';
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const cell = state.grid[r][c];
         const div = document.createElement('div');
         div.className = 'cell';
-        div.dataset.r = r;
-        div.dataset.c = c;
+        div.dataset.r = r; div.dataset.c = c;
 
-        if (cell.type !== EMPTY){
-          const img = document.createElement('img');
-          img.src = cellImgSrc(cell);
-          div.appendChild(img);
+        const tex = document.createElement('div');
+        tex.className = 'tex';
+        tex.style = cellTextureStyle(cell);
+        div.appendChild(tex);
+
+        if(cell.type === CAVE){
+          const cave = state.caves[cell.caveId];
+          const badge = document.createElement('div');
+          badge.className = 'badge';
+          badge.textContent = cave.sizeName === 'small' ? 'S' : (cave.sizeName === 'medium' ? 'M' : 'L');
+          div.appendChild(badge);
+
+          const bar = document.createElement('div');
+          bar.className = 'cave-timer';
+          const i = document.createElement('i');
+          i.style.width = cave.startedAt ? (100 * cave.progressMs / cave.totalMs) + '%' : '0%';
+          bar.appendChild(i);
+          div.appendChild(bar);
         }
 
-        if (cell.type === CAVE){
-          // 洞窟の状態描画
-          const cav = caves.get(cell.caveId);
-          if (cav){
-            const ov = document.createElement('div');
-            ov.className = 'overlay';
-            let txt = '';
-            if (cav.state === 'idle') txt = '';
-            else if (cav.state === 'exploring') {
-              const remain = Math.max(0, Math.ceil((cav.endAt - Date.now())/1000));
-              txt = '探索中… ' + remain + 's';
-              // プログレスバー
-              const pr = document.createElement('div');
-              pr.className = 'progress';
-              const fill = document.createElement('i');
-              const total = CAVE_INFO[cav.size].secs;
-              const done = Math.min(1, 1 - (remain/total));
-              fill.style.width = (done*100).toFixed(1)+'%';
-              pr.appendChild(fill);
-              div.appendChild(pr);
-            } else if (cav.state === 'done') {
-              txt = '回収OK';
-            }
-            ov.textContent = txt;
-            div.appendChild(ov);
-          }
+        div.addEventListener('click', (e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          mineCell(r,c, e.currentTarget, rect.left + rect.width/2, rect.top + rect.height/2);
+        }, {passive:true});
+
+        frag.appendChild(div);
+      }
+    }
+    el.grid.appendChild(frag);
+  }
+
+  function renderCell(r,c){
+    const idx = r*COLS + c;
+    const cellEl = el.grid.children[idx];
+    if(!cellEl) return;
+    const cell = state.grid[r][c];
+    const tex = cellEl.querySelector('.tex');
+    if(tex) tex.style = cellTextureStyle(cell);
+    // Clear/add cave UI
+    cellEl.querySelectorAll('.badge, .cave-timer').forEach(n => n.remove());
+    if(cell.type === CAVE){
+      const cave = state.caves[cell.caveId];
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = cave.sizeName === 'small' ? 'S' : (cave.sizeName === 'medium' ? 'M' : 'L');
+      const bar = document.createElement('div');
+      bar.className = 'cave-timer';
+      const i = document.createElement('i');
+      i.style.width = cave.startedAt ? (100 * cave.progressMs / cave.totalMs) + '%' : '0%';
+      bar.appendChild(i);
+      cellEl.appendChild(badge);
+      cellEl.appendChild(bar);
+    }
+  }
+
+  function animatePick(targetEl, pageX, pageY){
+    const pick = document.createElement('div');
+    pick.className = 'pick-anim';
+    pick.textContent = '⛏️';
+    const rect = targetEl.getBoundingClientRect();
+    const x = rect.left + rect.width/2;
+    const y = rect.top + rect.height/2;
+    pick.style.left = x + 'px';
+    pick.style.top = y + 'px';
+    pick.style.position = 'fixed';
+    document.body.appendChild(pick);
+    setTimeout(()=> pick.remove(), 420);
+  }
+
+  function toast(msg){
+    const t = el.toast;
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._to);
+    t._to = setTimeout(() => t.classList.remove('show'), 1300);
+  }
+
+  // Regen loop
+  let last = performance.now();
+  function tick(now){
+    const dt = now - last; last = now;
+
+    // Regen
+    state.regen.accMs += dt;
+    const interval = regenIntervalMs();
+    const progress = Math.min(1, state.regen.accMs / interval);
+    el.regenBar.style.width = (progress*100) + '%';
+    if(state.regen.accMs >= interval){
+      state.regen.accMs -= interval;
+      if(state.picks < state.picksMax){
+        state.picks++;
+        renderHUD();
+      }
+    }
+
+    // Caves
+    updateCaves(dt);
+    // Update cave bars in DOM
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const cell = state.grid[r][c];
+        if(cell.type === CAVE){
+          const idx = r*COLS + c;
+          const node = el.grid.children[idx];
+          const cave = state.caves[cell.caveId];
+          const bar = node?.querySelector('.cave-timer > i');
+          if(bar) bar.style.width = cave.startedAt ? (100 * cave.progressMs / cave.totalMs) + '%' : '0%';
         }
-
-        // ハンドラ
-        div.addEventListener('click', onCellTap, {passive:true});
-        $grid.appendChild(div);
-      }
-    }
-  }
-
-  function renderUpgrades(){
-    $uRegenLvl.textContent = regenLvl;
-    $uMaxLvl.textContent = maxLvl;
-    $uPtsLvl.textContent = ptsLvl;
-    $uCaveLvl.textContent = caveLvl;
-
-    $uMaxNow.textContent = pickMax;
-    $uPtsNow.textContent = (1 + 0.1*ptsLvl).toFixed(2) + '×';
-
-    $uRegenCost.textContent = priceRegen().toString() + 'pt';
-    $uMaxCost.textContent   = priceMax().toString() + 'pt';
-    $uPtsCost.textContent   = pricePts().toString() + 'pt';
-    $uCaveCost.textContent  = priceCave().toString() + 'pt';
-  }
-
-  // ====== ロジック ======
-  function onCellTap(e){
-    const target = e.currentTarget;
-    const r = +target.dataset.r;
-    const c = +target.dataset.c;
-    const cell = visible[r][c];
-
-    if (!cell || cell.type === EMPTY) return;
-
-    if (cell.type === DIRT || cell.type === STONE){
-      const need = COST_PICK[cell.type];
-      if (pick < need) {
-        pulse(target);
-        return;
-      }
-      pick -= need;
-
-      const mult = 1 + 0.1*ptsLvl;
-      const gain = Math.round(BASE_POINTS[cell.type] * mult);
-      score += gain;
-
-      // 掘った
-      visible[r][c] = makeCell(EMPTY);
-      pickaxeFx(target, cell.type);
-
-      // 下段なら1m進めてシフト
-      if (r === ROWS-1) {
-        depth += 1;
-        shiftDown();
-      }
-
-      renderStats();
-      // 下段でない場合も、そのセルだけ更新したいけど、簡単に全体再描画
-      renderGrid();
-      return;
-    }
-
-    if (cell.type === CAVE){
-      const cav = caves.get(cell.caveId);
-      if (!cav) return;
-
-      if (cav.state === 'idle'){
-        cav.state = 'exploring';
-        cav.endAt = Date.now() + CAVE_INFO[cav.size].secs * 1000;
-        renderGrid();
-      } else if (cav.state === 'done'){
-        // 報酬受け取り：スコア + ピッケル
-        const info = CAVE_INFO[cav.size];
-        const ptsMult = 1 + 0.1*ptsLvl;
-        const caveMult = 1 + 0.2*caveLvl;
-        const gainScore = Math.round(info.baseScore * ptsMult * caveMult);
-        const gainPick = Math.max(1, Math.round(info.basePicks * caveMult));
-
-        score += gainScore;
-        pick = Math.min(pickMax, pick + gainPick);
-
-        // セルを空に
-        for (const pos of cav.cells){
-          // pos.r は可視インデックス不定 → 現在の可視に存在するなら消す
-          // 同一 caveId を持つセルを可視から探して空に
-        }
-        // 可視グリッドを直接走査して該当 caveId を空へ
-        for (let rr=0; rr<ROWS; rr++){
-          for (let cc=0; cc<COLS; cc++){
-            const cl = visible[rr][cc];
-            if (cl.type === CAVE && cl.caveId === cell.caveId){
-              visible[rr][cc] = makeCell(EMPTY);
-            }
-          }
-        }
-        caves.delete(cell.caveId);
-
-        toast(target, `+${gainScore}pt / +${gainPick}⛏️`);
-        renderAll();
-      } else {
-        // exploring 中は何もしない
-      }
-    }
-  }
-
-  function shiftDown(){
-    // 一番上を捨て、下に queue から1行補充
-    visible.shift();
-    if (queue.length === 0) fillQueue(false);
-    const next = queue.shift();
-    visible.push(next);
-
-    // ついでに先読み補充
-    fillQueue(false);
-  }
-
-  function regenPerSec(){
-    return BASE_REGEN_PER_SEC * (1 + 0.2*regenLvl);
-  }
-
-  // ====== アップグレード・購入 ======
-  function priceRegen(){ return Math.round(500 * Math.pow(1.6, regenLvl)); }
-  function priceMax(){   return Math.round(500 * Math.pow(1.6, maxLvl)); }
-  function pricePts(){   return Math.round(800 * Math.pow(1.6, ptsLvl)); }
-  function priceCave(){  return Math.round(800 * Math.pow(1.6, caveLvl)); }
-
-  $buy1.addEventListener('click', ()=>{
-    if (score >= 100 && pick < pickMax){
-      score -= 100;
-      pick = Math.min(pickMax, pick + 1);
-      renderStats();
-    }
-  });
-  $buy10.addEventListener('click', ()=>{
-    const need = Math.min(10, pickMax - pick);
-    if (need <= 0) return;
-    const cost = 100 * need;
-    if (score >= cost){
-      score -= cost;
-      pick += need;
-      renderStats();
-    }
-  });
-
-  $uRegenBtn.addEventListener('click', ()=>{
-    const cost = priceRegen();
-    if (score >= cost){
-      score -= cost;
-      regenLvl += 1;
-      renderAll();
-    }
-  });
-  $uMaxBtn.addEventListener('click', ()=>{
-    const cost = priceMax();
-    if (score >= cost){
-      score -= cost;
-      maxLvl += 1;
-      pickMax = 50 + 10*maxLvl; // 上限拡張（時間回復の上限も同じ）
-      // 上限に合わせて表示更新
-      if (pick > pickMax) pick = pickMax;
-      renderAll();
-    }
-  });
-  $uPtsBtn.addEventListener('click', ()=>{
-    const cost = pricePts();
-    if (score >= cost){
-      score -= cost;
-      ptsLvl += 1;
-      renderAll();
-    }
-  });
-  $uCaveBtn.addEventListener('click', ()=>{
-    const cost = priceCave();
-    if (score >= cost){
-      score -= cost;
-      caveLvl += 1;
-      renderAll();
-    }
-  });
-
-  // ====== ループ（回復＆洞窟進行） ======
-  let lastTick = performance.now();
-  function loop(now = performance.now()){
-    const dt = Math.min(0.1, (now - lastTick)/1000); // 100ms上限
-    lastTick = now;
-
-    // ピッケル回復
-    if (pick < pickMax){
-      regenAcc += regenPerSec() * dt;
-      if (regenAcc >= 1){
-        const add = Math.floor(regenAcc);
-        regenAcc -= add;
-        pick = Math.min(pickMax, pick + add);
-        // 反映
-        $pickVal.textContent = pick;
       }
     }
 
-    // 洞窟の進行
-    let needRenderGrid = false;
-    for (const [id, cav] of caves){
-      if (cav.state === 'exploring' && Date.now() >= cav.endAt){
-        cav.state = 'done';
-        needRenderGrid = true;
-      }
+    requestAnimationFrame(tick);
+  }
+
+  // Upgrade handlers
+  function buyUpgrade(key){
+    const cost = nextUpgradeCost(key);
+    if(state.score < cost){ toast('ポイント不足'); return; }
+
+    if(key === 'max'){
+      // +10 max per lv, clamp to 100
+      if(state.picksMax >= MAX_PICK_CAP){ toast('最大は100'); return; }
+      if(!spendScore(cost)) return;
+      state.upgrades.max++;
+      state.picksMax = Math.min(MAX_PICK_CAP, 50 + state.upgrades.max*10);
+      // If picks > new max (shouldn’t happen), clamp
+      if(state.picks > state.picksMax) state.picks = state.picksMax;
+      toast('ピッケル最大アップ！');
+    }else if(key === 'regen'){
+      if(!spendScore(cost)) return;
+      state.upgrades.regen++;
+      // reset bar to feel snappier
+      state.regen.accMs = 0;
+      toast('回復速度アップ！');
+    }else if(key === 'point'){
+      if(!spendScore(cost)) return;
+      state.upgrades.point++;
+      toast('ポイント倍率アップ！');
+    }else if(key === 'cave'){
+      if(!spendScore(cost)) return;
+      state.upgrades.cave++;
+      toast('鉱窟採取個数アップ！');
     }
-    if (needRenderGrid) renderGrid();
-
-    requestAnimationFrame(loop);
+    renderHUD(); save();
   }
 
-  // ====== FX / UI ======
-  function pickaxeFx(cellEl, type){
-    const bounds = $grid.getBoundingClientRect();
-    const rect = cellEl.getBoundingClientRect();
-
-    const fx = document.createElement('div');
-    fx.className = 'fx';
-    fx.textContent = '⛏️';
-    fx.style.left = (rect.left - bounds.left + rect.width*0.15) + 'px';
-    fx.style.top  = (rect.top - bounds.top - 6) + 'px';
-    $grid.appendChild(fx);
-    setTimeout(()=> fx.remove(), 420);
-
-    const sp = document.createElement('div');
-    sp.className = 'spark';
-    sp.textContent = type === STONE ? '💥' : '✨';
-    sp.style.left = (rect.left - bounds.left + rect.width*0.55) + 'px';
-    sp.style.top  = (rect.top - bounds.top + rect.height*0.35) + 'px';
-    $grid.appendChild(sp);
-    setTimeout(()=> sp.remove(), 520);
+  // Buy picks
+  function buyPicks(n){
+    n = Math.max(1, n|0);
+    const room = state.picksMax - state.picks;
+    if(room <= 0){ toast('もうMAX'); return; }
+    const buy = Math.min(room, n);
+    const cost = buy * PICK_PRICE;
+    if(state.score < cost){ toast('ポイント不足'); return; }
+    spendScore(cost);
+    addPicks(buy);
+    toast(`⛏️ +${buy}`);
+    save();
   }
 
-  function pulse(el){
-    el.animate([
-      {transform:'scale(1)', filter:'brightness(1)'},
-      {transform:'scale(0.97)', filter:'brightness(1.25)'},
-      {transform:'scale(1)', filter:'brightness(1)'},
-    ], {duration:200, easing:'ease-out'});
+  // Save/Load
+  function save(){
+    const data = JSON.stringify(state, (k,v) => {
+      if(k === 'toast' || k === 'gridEl') return undefined;
+      return v;
+    });
+    try{ localStorage.setItem(SAVE_KEY, data); }catch(e){}
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(!raw) return false;
+      const s = JSON.parse(raw);
+      // Minimal validation & migrate
+      Object.assign(state, s);
+      // Rebuild caves map if missing methods (no methods anyway)
+      return true;
+    }catch(e){ return false; }
   }
 
-  function toast(anchor, text){
-    const bounds = $grid.getBoundingClientRect();
-    const rect = anchor.getBoundingClientRect();
-    const tip = document.createElement('div');
-    tip.className = 'spark';
-    tip.style.fontSize = '14px';
-    tip.style.left = (rect.left - bounds.left + rect.width*0.5 - 24) + 'px';
-    tip.style.top  = (rect.top - bounds.top - 6) + 'px';
-    tip.textContent = text;
-    $grid.appendChild(tip);
-    setTimeout(()=> tip.remove(), 800);
-  }
+  // Events
+  el.buy1.addEventListener('click', () => buyPicks(1));
+  el.buy10.addEventListener('click', () => buyPicks(10));
+  el.buyMax.addEventListener('click', () => buyPicks(999));
+  el.uRegenBtn.addEventListener('click', () => buyUpgrade('regen'));
+  el.uMaxBtn.addEventListener('click', () => buyUpgrade('max'));
+  el.uPointBtn.addEventListener('click', () => buyUpgrade('point'));
+  el.uCaveBtn.addEventListener('click', () => buyUpgrade('cave'));
 
-  // ====== スタート ======
-  init();
+  // Bootstrap
+  if(!load()){
+    initGrid();
+    state.depth = 0;
+    state.score = 0;
+    state.picks = 50;
+    state.picksMax = 100;
+  }
+  renderHUD();
+  renderGrid();
+  requestAnimationFrame((t)=>{ last = t; requestAnimationFrame(tick); });
+
+  // UX: prevent long-press menu
+  window.addEventListener('contextmenu', e => e.preventDefault());
 })();
 </script>
 </body>
