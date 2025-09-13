@@ -383,14 +383,18 @@
     regenLabel.textContent = (getRegenInterval()/1000).toFixed(1) + 's';
   }
 
-  function onCell(e){
-    const target = e.currentTarget;
-    const r = +target.dataset.r, c = +target.dataset.c;
-    const cell = state.grid[r][c];
-    if (!cell) return;
+ function onCell(e){
+  const now = performance.now();
+  if (now < mineCooldown) return; // クールダウン中は無視
+  mineCooldown = now + 300; // 300ms 後まで掘れない
 
-    const rect = target.getBoundingClientRect();
-    spawnPickaxe(rect.left + rect.width*0.5, rect.top + rect.height*0.4);
+  const target = e.currentTarget;
+  const r = +target.dataset.r, c = +target.dataset.c;
+  const cell = state.grid[r][c];
+  if (!cell) return;
+
+  const rect = target.getBoundingClientRect();
+  spawnPickaxe(rect.left + rect.width*0.5, rect.top + rect.height*0.4);
 
     if (cell.type === 'dirt' || cell.type === 'stone'){
       const need = cell.type === 'stone' ? STONE_COST : DIRT_COST;
